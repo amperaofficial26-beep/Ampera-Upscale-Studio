@@ -47,6 +47,7 @@ MAX_VIDEO_SECONDS = 10                  # 10 detik
 SPANDREL_MODELS = {
     "realesrgan_x4plus":  ("RealESRGAN_x4plus.pth", 4, "foto / realistis"),
     "realesrgan_anime":   ("RealESRGAN_x4plus_anime_6B.pth", 4, "animasi / ilustrasi"),
+    "realesrgan_animevid": ("realesr-animevideov3.pth", 4, "fidelitas tinggi — super cepat"),
     "realesrgan_x2plus":  ("RealESRGAN_x2plus.pth", 2, "pembesaran 2x"),
     "swinir_x4":          ("SwinIR_4xSR_M_x4.pth", 4, "natural"),
     "cugan_x4":           ("RealCUGAN_up4x.pth", 4, "anime"),
@@ -65,6 +66,9 @@ MODEL_DOWNLOADS = {
     "RealESRGAN_x4plus_anime_6B.pth": (
         "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth",
         18874368),
+    "realesr-animevideov3.pth": (
+        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-animevideov3.pth",
+        2504012),
     "SwinIR_4xSR_M_x4.pth": (
         "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth",
         59611499),
@@ -136,6 +140,7 @@ TILE_PAD = 16
 # Estimasi CPU (dtk per tile), diukur di 2 core / 2 GB RAM
 TILE_SECONDS = {
     "realesrgan_x4plus": 30, "realesrgan_x2plus": 11, "realesrgan_anime": 11,
+    "realesrgan_animevid": 1.5,
     "swinir_x4": 52, "cugan_x4": 4, "hat_x4": 24,
 }
 
