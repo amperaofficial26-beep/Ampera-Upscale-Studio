@@ -139,7 +139,7 @@ with tab_photo:
         with b2:
             st.caption(f"Hasil: {out_w}×{out_h} px — {est_text}")
 
-        if go and can_run:
+        if go and model_ready:
             t0 = time.time()
             pbar = st.progress(0.0, text="Memuat model…")
 
