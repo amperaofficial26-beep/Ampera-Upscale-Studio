@@ -32,17 +32,41 @@ pip install -r requirements.txt
 # torch CPU (tanpa GPU):
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-# Bobot model (sekali saja) → folder models/
-curl -LO https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth
-curl -LO https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth
-curl -LO https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth
-curl -LO https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth -o models/SwinIR_4xSR_M_x4.pth
-curl -LO https://huggingface.co/smnorini/Real_CUGAN_4x/resolve/main/Real_CUGAN_4x.pth -o models/RealCUGAN_up4x.pth
-curl -LO https://huggingface.co/jaideepsingh/upscale_models/resolve/main/HAT/HAT_SRx4.pth -o models/HAT_SRx4.pth
-for s in 2 3 4; do curl -LO https://github.com/Saafke/FSRCNN_Tensorflow/raw/master/models/FSRCNN_x${s}.pb; done
+# unduh semua bobot model (yang sudah ada otomatis di-skip)
+python download_models.py
 
 streamlit run app.py   # buka http://localhost:8501
 ```
+
+> **Alternatif tanpa skrip:** jika ada model yang belum ada, app akan menampilkan
+> tombol **⬇️ Unduh model** langsung di UI saat engine tersebut dipilih.
+
+## 📤 Mempublikasikan ke GitHub
+
+GitHub membatasi upload web **25 MB per file**, jadi file bobot model yang besar
+(RealESRGAN_x4plus 64 MB, SwinIR 57 MB, HAT 82 MB) **tidak boleh di-commit** —
+sudah dikecualikan lewat `.gitignore`. Yang perlu di-upload/commit:
+
+- `app.py`, `enhance.py`, `supir.py`, `download_models.py`
+- `requirements.txt`, `README.md`, `.gitignore`
+- `models/RealCUGAN_up4x.pth` (5,4 MB), `models/RealESRGAN_x4plus_anime_6B.pth` (18 MB),
+  `models/FSRCNN_x2/x3/x4.pb` (±40 KB) — kecil, boleh ikut
+- `vendor/SUPIR/` (±29 MB kode — boleh, atau skip dan `git clone` di setup)
+
+Setelah itu, pengguna yang meng-clone tinggal jalankan `python download_models.py`
+dan semua model besar akan terunduh otomatis.
+
+```bash
+# contoh alur push dari terminal
+git init
+git add .
+git commit -m "Ampera Enhance — AI upscaler foto & video"
+git remote add origin https://github.com/<user>/<repo>.git
+git push -u origin main
+```
+
+> Alternatif: **Git LFS** kalau Anda memang ingin bobot model ikut di repo
+> (`git lfs track "*.pth" && git lfs install` — butuh akun + kuota LFS 1 GB).
 
 ## 💎 Mode SUPIR (eksperimental)
 Butuh semua ini agar aktif:
