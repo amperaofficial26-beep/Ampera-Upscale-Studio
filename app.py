@@ -8,16 +8,16 @@ import enhance as E
 import supir
 
 st.set_page_config(
-    page_title="Peningkat Foto & Video",
+    page_title="Ampera Enhance",
     page_icon="✨",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-st.title("✨ Peningkat Foto & Video (AI Upscaler)")
+st.title("✨ Ampera Enhance")
 st.caption(
-    "Batas: **foto maksimal 20 MB** • **video maksimal 10 detik**. "
-    "Dijalankan di CPU — untuk hasil maksimal gunakan GPU."
+    "Foto & video, naik kelas — by **Ampera Official**.  "
+    "Batas: **foto maksimal 20 MB** • **video maksimal 10 detik**."
 )
 
 tab_photo, tab_video = st.tabs(["📷 Foto", "🎬 Video"])
@@ -39,6 +39,32 @@ VIDEO_ENGINES = [
     ("cugan",      "🥉 Real-CUGAN — Anime"),
     ("hat",        "🔥 HAT — Ultra Quality"),
 ]
+
+def _ensure_model_ready(model_key) -> bool:
+    """Jika file model belum ada di server, tampilkan tombol unduh. Return True jika siap."""
+    missing = E.model_missing(model_key)
+    if missing is None:
+        return True
+    url, size = E.MODEL_DOWNLOADS[missing]
+    st.warning(
+        f"Model **{missing}** belum ada di server ini ({size / 1024 / 1024:.0f} MB). "
+        "Unduh dulu, atau jalankan `python download_models.py` di terminal.")
+    if st.button(f"⬇️ Unduh model ({size / 1024 / 1024:.0f} MB)", key=f"dl_{missing}"):
+        pbar = st.progress(0.0, text="Mengunduh…")
+        try:
+            def _cb(done, tot):
+                if tot:
+                    pbar.progress(done / tot,
+                                  text=f"⬇️ {done / 1024 / 1024:.1f} / {tot / 1024 / 1024:.1f} MB")
+            E.download_model(missing, progress_cb=_cb)
+            pbar.progress(1.0, text="Selesai ✅")
+            st.success(f"Model {missing} terunduh — silakan proses ulang.")
+            st.rerun()
+        except Exception as ex:
+            pbar.empty()
+            st.error(f"Gagal mengunduh model: {ex}")
+    return False
+
 
 # ---------------------------------------------------------------- Foto
 with tab_photo:
@@ -117,9 +143,15 @@ with tab_photo:
         else:
             est_text = "Cepat (≤ beberapa detik)"
 
+        model_ready = True
+        if model_key:
+            model_ready = _ensure_model_ready(model_key)
+        elif engine == "fsrcnn":
+            model_ready = _ensure_model_ready(scale)
+
         b1, b2 = st.columns([1, 3])
         with b1:
-            can_run = engine != "supir" or supir_ready
+            can_run = (engine != "supir" or supir_ready) and model_ready
             go = st.button("🚀 Proses", type="primary", use_container_width=True,
                            disabled=not can_run, key="photo_go")
         with b2:
@@ -248,10 +280,16 @@ with tab_video:
         else:
             est_text = f"{n_proc} frame"
 
+        model_ready = True
+        if model_key:
+            model_ready = _ensure_model_ready(model_key)
+        elif engine == "fsrcnn":
+            model_ready = _ensure_model_ready(scale)
+
         b1, b2 = st.columns([1, 3])
         with b1:
             go = st.button("🚀 Proses Video", type="primary", use_container_width=True,
-                           key="video_go")
+                           disabled=not model_ready, key="video_go")
         with b2:
             st.caption(
                 f"Hasil: {info['w'] * scale}×{info['h'] * scale} @ {info['fps']:.0f} fps. {est_text}")
