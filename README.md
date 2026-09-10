@@ -43,18 +43,21 @@ streamlit run app.py   # buka http://localhost:8501
 
 ## 📤 Mempublikasikan ke GitHub
 
-GitHub membatasi upload web **25 MB per file**, jadi file bobot model yang besar
-(RealESRGAN_x4plus 64 MB, SwinIR 57 MB, HAT 82 MB) **tidak boleh di-commit** —
-sudah dikecualikan lewat `.gitignore`. Yang perlu di-upload/commit:
+**Semua model default sudah < 25 MB** — aman di-upload lewat web GitHub, dan app
+langsung jalan setelah di-clone (tanpa perlu unduh apa pun):
 
-- `app.py`, `enhance.py`, `supir.py`, `download_models.py`
-- `requirements.txt`, `README.md`, `.gitignore`
-- `models/RealCUGAN_up4x.pth` (5,4 MB), `models/RealESRGAN_x4plus_anime_6B.pth` (18 MB),
-  `models/FSRCNN_x2/x3/x4.pb` (±40 KB) — kecil, boleh ikut
-- `vendor/SUPIR/` (±29 MB kode — boleh, atau skip dan `git clone` di setup)
+| File default | Ukuran |
+|---|---|
+| `models/RealESRGAN_x4plus_anime_6B.pth` (🥇 utama, 6B) | 18 MB |
+| `models/RealCUGAN_up4x.pth` (🥉 anime) | 5,4 MB |
+| `models/FSRCNN_x2/x3/x4.pb` (⚡ cepat) | ±40 KB |
+| `app.py`, `enhance.py`, `supir.py`, `download_models.py` | kecil |
+| `requirements.txt`, `README.md`, `.gitignore` | kecil |
+| `vendor/SUPIR/` (±29 MB kode, file individual kecil) | boleh ikut / boleh skip |
 
-Setelah itu, pengguna yang meng-clone tinggal jalankan `python download_models.py`
-dan semua model besar akan terunduh otomatis.
+Model besar (x4plus 64 MB, x2plus 64 MB, SwinIR 57 MB, HAT 82 MB) bersifat
+**opsional** — sudah dikecualikan lewat `.gitignore`. Bila dipilih di UI, app
+menawarkan tombol **⬇️ Unduh model** otomatis, atau jalankan `python download_models.py`.
 
 ```bash
 # contoh alur push dari terminal
