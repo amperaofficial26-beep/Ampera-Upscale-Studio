@@ -5,7 +5,6 @@ import time
 import streamlit as st
 
 import enhance as E
-import supir
 
 st.set_page_config(
     page_title="Ampera Enhance",
@@ -23,21 +22,17 @@ st.caption(
 tab_photo, tab_video = st.tabs(["📷 Foto", "🎬 Video"])
 
 # ---------------------------------------------------------------- engine
+# Semua model < 25 MB → bisa di-commit ke GitHub, tanpa download apa pun
 PHOTO_ENGINES = [
-    ("realesrgan", "🥇 Real-ESRGAN — Utama (6B: 18 MB)"),
-    ("cugan",      "🥉 Real-CUGAN — Anime (5 MB, cepat)"),
-    ("fsrcnn",     "⚡ FSRCNN — Cepat (40 KB)"),
-    ("classic",    "🔧 Klasik — Lanczos (0 MB, tanpa AI)"),
-    ("swinir",     "🥈 SwinIR — Natural (opsional, 57 MB)"),
-    ("hat",        "🔥 HAT — Ultra Quality (opsional, 82 MB)"),
-    ("supir",      "💎 SUPIR — Eksperimental (GPU)"),
-]
-VIDEO_ENGINES = [
-    ("fsrcnn",     "⚡ FSRCNN — Cepat (40 KB, disarankan CPU)"),
     ("realesrgan", "🥇 Real-ESRGAN — Utama"),
     ("cugan",      "🥉 Real-CUGAN — Anime (5 MB)"),
-    ("swinir",     "🥈 SwinIR — Natural (opsional, 57 MB)"),
-    ("hat",        "🔥 HAT — Ultra Quality (opsional, 82 MB)"),
+    ("fsrcnn",     "⚡ FSRCNN — Cepat (40 KB)"),
+    ("classic",    "🔧 Klasik — Lanczos (0 MB, tanpa AI)"),
+]
+VIDEO_ENGINES = [
+    ("realesrgan", "🥇 Real-ESRGAN — Utama (animevideov3: 2,4 MB, super cepat)"),
+    ("fsrcnn",     "⚡ FSRCNN — Instan (40 KB)"),
+    ("cugan",      "🥉 Real-CUGAN — Anime (5 MB)"),
 ]
 
 def _ensure_model_ready(model_key) -> bool:
@@ -94,26 +89,25 @@ with tab_photo:
 
         model_key = None
         scale = 2
-        c1, c2, c3 = st.columns([2, 1.4, 1.4])
+        c1, c2 = st.columns([2, 1.4])
         with c1:
             if engine == "realesrgan":
                 model_key = st.selectbox(
                     "Model Real-ESRGAN",
-                    ["realesrgan_anime", "realesrgan_x4plus", "realesrgan_x2plus"],
+                    ["realesrgan_anime", "realesrgan_animevid"],
                     format_func=lambda k: (
                         f"{k.replace('realesrgan_', '').upper()} — {E.SPANDREL_MODELS[k][2]} "
-                        f"({E.model_size_mb(E.SPANDREL_MODELS[k][0]):.0f} MB)"),
+                        f"({E.model_size_mb(E.SPANDREL_MODELS[k][0]):.1f} MB)"),
                     key="photo_rm")
                 scale = E.SPANDREL_MODELS[model_key][1]
-                if model_key == "realesrgan_anime":
-                    st.caption("Model 6B (18 MB) — ringan & sudah ada di repo. "
-                                "Sangat bagus untuk anime/ilustrasi, bagus juga untuk foto.")
-            elif engine in ("swinir", "cugan", "hat"):
-                model_key = engine + "_x4"
+                st.caption({"realesrgan_anime":
+                                "6B (18 MB) — kualitas terbaik di lineup; jago animasi & foto.",
+                            "realesrgan_animevid":
+                                "AnimeVideoV3 (2,4 MB) — super cepat, tajam, fidelitas tinggi."}[model_key])
+            elif engine == "cugan":
+                model_key = "cugan_x4"
                 scale = 4
-                st.caption({"swinir": "🥈 Hasil natural, detail halus (opsional, 57 MB)",
-                            "cugan": "🥉 Dioptimalkan untuk anime / ilustrasi (5 MB)",
-                            "hat": "🔥 Ultra quality, transformer hybrid (opsional, 82 MB)"}[engine])
+                st.caption("🥉 Dioptimalkan untuk anime / ilustrasi (5 MB)")
             elif engine == "fsrcnn":
                 scale = st.selectbox("Pembesaran", [2, 3, 4],
                                      format_func=lambda s: f"{s}x", key="photo_fs_scale")
@@ -123,25 +117,9 @@ with tab_photo:
         with c2:
             sharpen = st.slider("Sharpening tambahan", 0, 100, 30, 5,
                                 help="Unsharp mask. 0 = nonaktif.", key="photo_sharp")
-        with c3:
-            if engine == "supir":
-                supir_upscale = st.selectbox("Upscale", [1, 2, 4],
-                                             format_func=lambda s: f"{s}x (min 1024 px)",
-                                             key="supir_us")
-                supir_steps = st.slider("Diffusion steps", 10, 100, 50, 5, key="supir_steps")
-
-        supir_ready, supir_msg = (None, None)
-        if engine == "supir":
-            supir_ready, supir_msg = supir.supir_status()
-            if not supir_ready:
-                st.warning("💎 " + supir_msg)
-            else:
-                st.success("💎 " + supir_msg)
 
         out_w, out_h = img.shape[1] * scale, img.shape[0] * scale
-        if engine == "supir":
-            est_text = "SUPIR: proses diffusion (puluhan detik–menit, butuh GPU)"
-        elif model_key:
+        if model_key:
             nt = E.estimate_tiles(img.shape[1], img.shape[0], model_key)
             est_text = (f"Estimasi CPU: ±{nt} tile × {E.TILE_SECONDS[model_key]} dtk "
                         f"≈ **{E.estimate_seconds(img.shape[1], img.shape[0], model_key) / 60:.0f} menit**")
@@ -156,9 +134,8 @@ with tab_photo:
 
         b1, b2 = st.columns([1, 3])
         with b1:
-            can_run = (engine != "supir" or supir_ready) and model_ready
             go = st.button("🚀 Proses", type="primary", use_container_width=True,
-                           disabled=not can_run, key="photo_go")
+                           disabled=not model_ready, key="photo_go")
         with b2:
             st.caption(f"Hasil: {out_w}×{out_h} px — {est_text}")
 
@@ -170,15 +147,10 @@ with tab_photo:
                 pbar.progress(min(i / total, 1.0), text=f"Mengolah tile {i}/{total}…")
 
             try:
-                if engine == "supir":
-                    st.spinner("SUPIR memuat model & menjalankan diffusion…")
-                    result = supir.enhance_supir(img, upscale=supir_upscale,
-                                                 steps=supir_steps)
-                else:
-                    result = E.enhance_image(
-                        img, "ai" if model_key else engine, model_key, scale,
-                        sharpen=sharpen / 100.0,
-                        progress_cb=_cb if model_key else None)
+                result = E.enhance_image(
+                    img, "ai" if model_key else engine, model_key, scale,
+                    sharpen=sharpen / 100.0,
+                    progress_cb=_cb if model_key else None)
                 pbar.progress(1.0, text="Selesai ✅")
             except Exception as ex:
                 pbar.empty()
@@ -216,7 +188,7 @@ with tab_video:
     st.info(
         "Video diproses per-frame, **audio asli dipertahankan** otomatis. "
         "⛔ Durasi melebihi 10 detik akan ditolak — silakan potong video dulu. "
-        "💎 SUPIR tidak tersedia untuk video (diffusion per-frame terlalu berat)."
+        "Untuk CPU, **Real-ESRGAN AnimeVideoV3 (2,4 MB)** adalah pilihan tercepat dengan kualitas terbaik."
     )
     vup = st.file_uploader(
         "Unggah video (MP4 / WebM / MOV / AVI)", type=["mp4", "webm", "mov", "avi", "mkv"],
@@ -255,14 +227,16 @@ with tab_video:
             if engine == "realesrgan":
                 model_key = st.selectbox(
                     "Model Real-ESRGAN",
-                    ["realesrgan_anime", "realesrgan_x2plus", "realesrgan_x4plus"],
+                    ["realesrgan_animevid", "realesrgan_anime"],
                     format_func=lambda k: (
                         f"{k.replace('realesrgan_', '').upper()} — {E.SPANDREL_MODELS[k][2]} "
-                        f"({E.model_size_mb(E.SPANDREL_MODELS[k][0]):.0f} MB)"),
+                        f"({E.model_size_mb(E.SPANDREL_MODELS[k][0]):.1f} MB)"),
                     key="vid_rm")
                 scale = E.SPANDREL_MODELS[model_key][1]
-            elif engine in ("swinir", "cugan", "hat"):
-                model_key = engine + "_x4"
+                if model_key == "realesrgan_animevid":
+                    st.caption("AnimeVideoV3 (2,4 MB) — pilihan terbaik untuk video di CPU.")
+            elif engine == "cugan":
+                model_key = "cugan_x4"
                 scale = 4
             elif engine == "fsrcnn":
                 scale = st.selectbox("Pembesaran", [2, 3, 4],
