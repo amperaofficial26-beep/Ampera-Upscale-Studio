@@ -1,17 +1,16 @@
 # ✨ Ampera Enhance (by Ampera Official)
 
-Aplikasi Streamlit untuk memperbesar & meningkatkan kualitas **foto** dan **video**
-dengan 5 model SOTA + 2 fallback:
+Aplikasi Streamlit untuk memperbesar & meningkatkan kualitas **foto** dan **video**.
+**Semua model < 25 MB** — bisa di-commit langsung ke GitHub, user tidak perlu
+mengunduh apa pun, dan ringan untuk CPU (teman baik dari Streamlit Cloud throttle).
 
-| Model | Peran | Teknologi | Kecepatan CPU (per tile) |
+| Model | Peran | Ukuran | Kecepatan CPU (per tile 256px) |
 |---|---|---|---|
-| 🥇 **Real-ESRGAN** | **Mesin utama** | RRDBNet (torch + spandrel), tile 256px | 30 dtk (x4) / 11 dtk (x2) |
-| 🥈 **SwinIR** | Mode **Natural** | Swin Transformer SR (spandrel), tile 256px | ±52 dtk (x4) |
-| 🥉 **Real-CUGAN** | Mode **Anime** | CUGAN residual dense (spandrel) | ±4 dtk (x4) — paling ringan |
-| 🔥 **HAT** | **Ultra Quality** | Hybrid Attention Transformer (spandrel), tile 128px (hemat RAM) | ±24 dtk per tile 128px |
-| 💎 **SUPIR** | **Eksperimental** (kualitas maksimal) | Diffusion StableSR + Swin2SR control — **butuh GPU ±11 GB VRAM** | menit (GPU) |
-| ⚡ FSRCNN | Cepat (disarankan video di CPU) | OpenCV dnn_superres | ±0,1–0,5 dtk/frame |
-| 🔧 Klasik | Fallback tanpa AI | Lanczos + unsharp | instan |
+| 🥇 **Real-ESRGAN 6B** | **Mesin utama** — animasi & foto | 18 MB | ±11 dtk |
+| 🥇 **Real-ESRGAN AnimeVideoV3** | **Fidelitas tinggi — super cepat** (pilihan utama video) | 2,4 MB | ±1,5 dtk |
+| 🥉 **Real-CUGAN** | Mode **Anime** | 5,4 MB | ±4 dtk |
+| ⚡ **FSRCNN** | Instan, paling ringan | 40 KB | ±0,05–0,2 dtk |
+| 🔧 **Klasik** | Fallback tanpa AI (Lanczos + unsharp) | 0 MB | instan |
 
 ## Batas input
 - 📷 **Foto maksimal 20 MB**
@@ -20,10 +19,11 @@ dengan 5 model SOTA + 2 fallback:
 ## Fitur
 - Pratinjau sebelum/sesudah + unduh (PNG/JPG/MP4)
 - Estimasi waktu & jumlah tile ditampilkan **sebelum** proses (diukur dari CPU aktual)
-- Tiling 256px (128px untuk HAT) dengan cross-fade → bebas sambungan, hemat RAM
+- Tiling 256px dengan cross-fade → bebas sambungan, hemat RAM
 - LRU cache model (maks 2 model) agar aman di mesin 2 GB RAM
 - Progress bar + ETA per frame untuk video
-- SUPIR terintegrasi penuh (kode resmi di `vendor/SUPIR`) — otomatis aktif bila GPU + model tersedia
+- Kalau ada model yang belum ada di server (mis. hasil clone parsial), UI otomatis
+  menampilkan tombol **⬇️ Unduh model** — user tetap tidak perlu install manual
 
 ## Menjalankan
 
@@ -32,32 +32,20 @@ pip install -r requirements.txt
 # torch CPU (tanpa GPU):
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-# unduh semua bobot model (yang sudah ada otomatis di-skip)
-python download_models.py
-
 streamlit run app.py   # buka http://localhost:8501
 ```
 
-> **Alternatif tanpa skrip:** jika ada model yang belum ada, app akan menampilkan
-> tombol **⬇️ Unduh model** langsung di UI saat engine tersebut dipilih.
+> Semua bobot model sudah ikut di repo (folder `models/`, total ±26 MB) —
+> langsung jalan, tanpa download.
 
 ## 📤 Mempublikasikan ke GitHub
 
-**Semua model default sudah < 25 MB** — aman di-upload lewat web GitHub, dan app
-langsung jalan setelah di-clone (tanpa perlu unduh apa pun):
+**Semua file aman di bawah 25 MB** — upload lewat web GitHub atau `git push`, bebas:
 
-| File default | Ukuran |
-|---|---|
-| `models/RealESRGAN_x4plus_anime_6B.pth` (🥇 utama, 6B) | 18 MB |
-| `models/RealCUGAN_up4x.pth` (🥉 anime) | 5,4 MB |
-| `models/FSRCNN_x2/x3/x4.pb` (⚡ cepat) | ±40 KB |
-| `app.py`, `enhance.py`, `supir.py`, `download_models.py` | kecil |
-| `requirements.txt`, `README.md`, `.gitignore` | kecil |
-| `vendor/SUPIR/` (±29 MB kode, file individual kecil) | boleh ikut / boleh skip |
-
-Model besar (x4plus 64 MB, x2plus 64 MB, SwinIR 57 MB, HAT 82 MB) bersifat
-**opsional** — sudah dikecualikan lewat `.gitignore`. Bila dipilih di UI, app
-menawarkan tombol **⬇️ Unduh model** otomatis, atau jalankan `python download_models.py`.
+- `app.py`, `enhance.py`, `supir.py`, `download_models.py`
+- `requirements.txt`, `README.md`, `.gitignore`
+- `models/` — total ±26 MB (file terbesar 18 MB) ✅
+- `vendor/SUPIR/` (±29 MB kode, file individual kecil) — boleh ikut / boleh skip
 
 ```bash
 # contoh alur push dari terminal
@@ -68,28 +56,25 @@ git remote add origin https://github.com/<user>/<repo>.git
 git push -u origin main
 ```
 
-> Alternatif: **Git LFS** kalau Anda memang ingin bobot model ikut di repo
-> (`git lfs track "*.pth" && git lfs install` — butuh akun + kuota LFS 1 GB).
+## Model besar (tidak termasuk)
+SwinIR (57 MB), HAT (82 MB), Real-ESRGAN x4plus/x2plus (64 MB), dan SUPIR (±8,5 GB)
+tidak termasuk karena **tidak memiliki varian resmi di bawah 25 MB**.
+Kode engine-nya masih ada di `enhance.py`/`supir.py` dan bisa diaktifkan kembali
+bila suatu saat diperlukan — tinggal tambah model-nya ke `SPANDREL_MODELS`.
 
-## 💎 Mode SUPIR (eksperimental)
-Butuh semua ini agar aktif:
-1. GPU NVIDIA ±11 GB VRAM (SUPIR resmi hanya mendukung CUDA)
-2. `pip install xformers` (kompatibel versi torch Anda)
-3. Model (±8,5 GB) di `models/supir/`:
-   - `sd_xl_base_1.0_0.9vae.safetensors` — https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0_0.9vae.safetensors
-   - `SUPIR-v0Q.ckpt` — https://huggingface.co/stabilityai/SUPIR_V.02_3k
-Kode SUPIR di-vendor dari https://github.com/Fanghua-Yu/SUPIR (folder `vendor/SUPIR`).
-Selama persyaratannya belum terpenuhi, UI menampilkan status apa yang kurang.
+## 💎 Mode SUPIR (eksperimental, tidak di UI)
+Kode terintegrasi di `supir.py` + `vendor/SUPIR/`, aktif hanya bila:
+GPU NVIDIA ±11 GB VRAM + xformers + model ±8,5 GB di `models/supir/`.
 
 ## Catatan CPU
-- Real-ESRGAN/SwinIR/HAT di CPU memang lambat (estimasi jujur ditampilkan di UI).
-- Untuk **foto** di CPU: Real-CUGAN (paling cepat) atau Real-ESRGAN (kualitas).
-- Untuk **video** di CPU: FSRCNN sangat disarankan.
-- Di **GPU** (torch CUDA): semua model AI jauh lebih cepat.
+- Estimasi waktu jujur selalu ditampilkan sebelum proses.
+- Untuk **foto**: Real-ESRGAN 6B (kualitas) atau AnimeVideoV3 (cepat).
+- Untuk **video**: Real-ESRGAN AnimeVideoV3 (±1,5 dtk/tile) atau FSRCNN (instan).
+- Di **GPU** (torch CUDA): semua model jauh lebih cepat.
 
 ## Struktur
 - `app.py` — UI Streamlit
 - `enhance.py` — engine (spandrel tiling, FSRCNN, klasik, video + audio mux, batas input)
-- `supir.py` — integrasi SUPIR (status + inference)
-- `vendor/SUPIR/` — kode resmi SUPIR
-- `models/` — bobot model
+- `download_models.py` — unduh model yang hilang (otomatis)
+- `supir.py` + `vendor/SUPIR/` — integrasi SUPIR (eksperimental, GPU)
+- `models/` — bobot model (semua < 25 MB)
