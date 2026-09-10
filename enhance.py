@@ -38,6 +38,75 @@ SPANDREL_MODELS = {
 }
 FSRCNN_MODELS = {2: "FSRCNN_x2.pb", 3: "FSRCNN_x3.pb", 4: "FSRCNN_x4.pb"}
 
+# URL resmi/verified untuk setiap file bobot model (dipakai app & download_models.py)
+MODEL_DOWNLOADS = {
+    "RealESRGAN_x4plus.pth": (
+        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
+        67108864),
+    "RealESRGAN_x2plus.pth": (
+        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth",
+        67108864),
+    "RealESRGAN_x4plus_anime_6B.pth": (
+        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth",
+        18874368),
+    "SwinIR_4xSR_M_x4.pth": (
+        "https://huggingface.co/licyk/sd-upscaler-models/resolve/main/SwinIR/001_classicalSR_DIV2K_s48w8_SwinIR-M_x4.pth",
+        59611499),
+    "RealCUGAN_up4x.pth": (
+        "https://huggingface.co/smnorini/Real_CUGAN_4x/resolve/main/Real_CUGAN_4x.pth",
+        5636403),
+    "HAT_SRx4.pth": (
+        "https://huggingface.co/jaideepsingh/upscale_models/resolve/main/HAT/HAT_SRx4.pth",
+        85137601),
+    "FSRCNN_x2.pb": (
+        "https://github.com/Saafke/FSRCNN_Tensorflow/raw/master/models/FSRCNN_x2.pb", 40000),
+    "FSRCNN_x3.pb": (
+        "https://github.com/Saafke/FSRCNN_Tensorflow/raw/master/models/FSRCNN_x3.pb", 41000),
+    "FSRCNN_x4.pb": (
+        "https://github.com/Saafke/FSRCNN_Tensorflow/raw/master/models/FSRCNN_x4.pb", 42000),
+}
+
+
+def model_path(fname: str) -> str:
+    return os.path.join(MODEL_DIR, fname)
+
+
+def model_missing(model_key) -> str:
+    """Return nama file yang hilang untuk model_key (spandrel key / scale fsrcnn), atau None."""
+    if model_key in SPANDREL_MODELS:
+        fname = SPANDREL_MODELS[model_key][0]
+    else:
+        fname = FSRCNN_MODELS.get(model_key) or FSRCNN_MODELS.get(str(model_key))
+        if fname is None:
+            return None
+    return fname if not os.path.exists(model_path(fname)) else None
+
+
+def download_model(fname: str, progress_cb=None) -> str:
+    """Unduh file model dari MODEL_DOWNLOADS. Return path hasil."""
+    import urllib.request
+
+    if fname not in MODEL_DOWNLOADS:
+        raise ValueError(f"File model tidak dikenal: {fname}")
+    url, size = MODEL_DOWNLOADS[fname]
+    dest = model_path(fname)
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    tmp = dest + ".part"
+    with urllib.request.urlopen(url) as r:
+        total = int(r.headers.get("Content-Length") or size or 0)
+        done = 0
+        with open(tmp, "wb") as f:
+            while True:
+                chunk = r.read(256 * 1024)
+                if not chunk:
+                    break
+                f.write(chunk)
+                done += len(chunk)
+                if progress_cb:
+                    progress_cb(done, total)
+    os.replace(tmp, dest)
+    return dest
+
 # Ukuran tile per model. HAT butuh tile kecil agar tidak OOM di RAM terbatas.
 TILE_OVERRIDES = {"hat_x4": 128}
 DEFAULT_TILE = 256
