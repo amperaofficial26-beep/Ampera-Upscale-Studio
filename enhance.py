@@ -20,7 +20,23 @@ import numpy as np
 import torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(HERE, "models")
+
+
+def _pick_model_dir() -> str:
+    """Folder model: sisi app bila writable, selain itu /tmp (mis. deploy read-only)."""
+    d = os.path.join(HERE, "models")
+    try:
+        os.makedirs(d, exist_ok=True)
+        probe = os.path.join(d, ".__w_probe__")
+        with open(probe, "w"):
+            pass
+        os.remove(probe)
+        return d
+    except OSError:
+        return "/tmp/ampera_models"
+
+
+MODEL_DIR = _pick_model_dir()
 
 # ---------------------------------------------------------------- batas input
 MAX_PHOTO_BYTES = 20 * 1024 * 1024      # 20 MB
