@@ -1,0 +1,13 @@
+# File model besar (>25 MB) — jangan commit; unduh via: python download_models.py
+models/RealESRGAN_x4plus.pth
+models/RealESRGAN_x2plus.pth
+models/SwinIR_4xSR_M_x4.pth
+models/HAT_SRx4.pth
+models/*.part
+
+# Model SUPIR (±8.5 GB)
+models/supir/
+
+# Python
+__pycache__/
+*.pyc
