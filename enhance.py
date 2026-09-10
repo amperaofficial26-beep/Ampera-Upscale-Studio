@@ -87,6 +87,11 @@ def model_path(fname: str) -> str:
     return os.path.join(MODEL_DIR, fname)
 
 
+def model_size_mb(fname: str) -> float:
+    """Ukuran file model (MB) dari katalog MODEL_DOWNLOADS."""
+    return MODEL_DOWNLOADS.get(fname, ("", 0))[1] / 1024 / 1024
+
+
 def model_missing(model_key) -> str:
     """Return nama file yang hilang untuk model_key (spandrel key / scale fsrcnn), atau None."""
     if model_key in SPANDREL_MODELS:
