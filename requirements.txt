@@ -1,0 +1,14 @@
+streamlit>=1.40
+opencv-contrib-python>=4.9
+numpy
+spandrel>=0.4
+imageio-ffmpeg
+
+# PyTorch — pilih sesuai perangkat:
+#   CPU :  pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   CUDA:  pip install torch torchvision  (versi sesuai driver GPU Anda)
+torch>=2.0
+
+# Khusus mode eksperimental SUPIR (butuh GPU ±11 GB VRAM):
+# pip install xformers
+# lalu unduh model ke models/supir/ (lihat README.md)
