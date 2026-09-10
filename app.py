@@ -24,20 +24,20 @@ tab_photo, tab_video = st.tabs(["📷 Foto", "🎬 Video"])
 
 # ---------------------------------------------------------------- engine
 PHOTO_ENGINES = [
-    ("realesrgan", "🥇 Real-ESRGAN — Utama"),
-    ("swinir",     "🥈 SwinIR — Natural"),
-    ("cugan",      "🥉 Real-CUGAN — Anime"),
-    ("hat",        "🔥 HAT — Ultra Quality"),
-    ("supir",      "💎 SUPIR — Eksperimental (kualitas maksimal)"),
-    ("fsrcnn",     "⚡ FSRCNN — Cepat (ringan)"),
-    ("classic",    "🔧 Klasik — Lanczos (tanpa AI)"),
+    ("realesrgan", "🥇 Real-ESRGAN — Utama (6B: 18 MB)"),
+    ("cugan",      "🥉 Real-CUGAN — Anime (5 MB, cepat)"),
+    ("fsrcnn",     "⚡ FSRCNN — Cepat (40 KB)"),
+    ("classic",    "🔧 Klasik — Lanczos (0 MB, tanpa AI)"),
+    ("swinir",     "🥈 SwinIR — Natural (opsional, 57 MB)"),
+    ("hat",        "🔥 HAT — Ultra Quality (opsional, 82 MB)"),
+    ("supir",      "💎 SUPIR — Eksperimental (GPU)"),
 ]
 VIDEO_ENGINES = [
-    ("fsrcnn",     "⚡ FSRCNN — Cepat (disarankan untuk CPU)"),
+    ("fsrcnn",     "⚡ FSRCNN — Cepat (40 KB, disarankan CPU)"),
     ("realesrgan", "🥇 Real-ESRGAN — Utama"),
-    ("swinir",     "🥈 SwinIR — Natural"),
-    ("cugan",      "🥉 Real-CUGAN — Anime"),
-    ("hat",        "🔥 HAT — Ultra Quality"),
+    ("cugan",      "🥉 Real-CUGAN — Anime (5 MB)"),
+    ("swinir",     "🥈 SwinIR — Natural (opsional, 57 MB)"),
+    ("hat",        "🔥 HAT — Ultra Quality (opsional, 82 MB)"),
 ]
 
 def _ensure_model_ready(model_key) -> bool:
@@ -99,16 +99,21 @@ with tab_photo:
             if engine == "realesrgan":
                 model_key = st.selectbox(
                     "Model Real-ESRGAN",
-                    ["realesrgan_x4plus", "realesrgan_anime", "realesrgan_x2plus"],
-                    format_func=lambda k: f"{k.replace('realesrgan_', '').upper()} — {E.SPANDREL_MODELS[k][2]}",
+                    ["realesrgan_anime", "realesrgan_x4plus", "realesrgan_x2plus"],
+                    format_func=lambda k: (
+                        f"{k.replace('realesrgan_', '').upper()} — {E.SPANDREL_MODELS[k][2]} "
+                        f"({E.model_size_mb(E.SPANDREL_MODELS[k][0]):.0f} MB)"),
                     key="photo_rm")
                 scale = E.SPANDREL_MODELS[model_key][1]
+                if model_key == "realesrgan_anime":
+                    st.caption("Model 6B (18 MB) — ringan & sudah ada di repo. "
+                                "Sangat bagus untuk anime/ilustrasi, bagus juga untuk foto.")
             elif engine in ("swinir", "cugan", "hat"):
                 model_key = engine + "_x4"
                 scale = 4
-                st.caption({"swinir": "🥈 Hasil natural, detail halus",
-                            "cugan": "🥉 Dioptimalkan untuk anime / ilustrasi",
-                            "hat": "🔥 Ultra quality (transformer hybrid, terlama)"}[engine])
+                st.caption({"swinir": "🥈 Hasil natural, detail halus (opsional, 57 MB)",
+                            "cugan": "🥉 Dioptimalkan untuk anime / ilustrasi (5 MB)",
+                            "hat": "🔥 Ultra quality, transformer hybrid (opsional, 82 MB)"}[engine])
             elif engine == "fsrcnn":
                 scale = st.selectbox("Pembesaran", [2, 3, 4],
                                      format_func=lambda s: f"{s}x", key="photo_fs_scale")
@@ -250,9 +255,10 @@ with tab_video:
             if engine == "realesrgan":
                 model_key = st.selectbox(
                     "Model Real-ESRGAN",
-                    ["realesrgan_x2plus", "realesrgan_x4plus", "realesrgan_anime"],
-                    index=0,
-                    format_func=lambda k: f"{k.replace('realesrgan_', '').upper()} — {E.SPANDREL_MODELS[k][2]}",
+                    ["realesrgan_anime", "realesrgan_x2plus", "realesrgan_x4plus"],
+                    format_func=lambda k: (
+                        f"{k.replace('realesrgan_', '').upper()} — {E.SPANDREL_MODELS[k][2]} "
+                        f"({E.model_size_mb(E.SPANDREL_MODELS[k][0]):.0f} MB)"),
                     key="vid_rm")
                 scale = E.SPANDREL_MODELS[model_key][1]
             elif engine in ("swinir", "cugan", "hat"):
