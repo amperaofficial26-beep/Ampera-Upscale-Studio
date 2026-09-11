@@ -168,7 +168,7 @@ def tune_torch_threads() -> int:
     except Exception:
         pass
     return torch.get_num_threads()
-  tune_torch_threads()
+       tune_torch_threads()
 
   
 def tile_for(model_key: str) -> int:
