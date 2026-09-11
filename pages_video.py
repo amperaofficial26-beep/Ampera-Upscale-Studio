@@ -85,16 +85,20 @@ def render():
     n_proc = info["frames"] if max_frames <= 0 else min(int(max_frames), info["frames"])
     if model_key:
         tiles = E.estimate_tiles(info["w"], info["h"], model_key)
-        est = ui.human_time(n_proc * tiles * E.TILE_SECONDS[model_key])
+        est = ui.human_time(n_proc * E.estimate_seconds(info["w"], info["h"],
+                                                        model_key))
     else:
         est = ui.human_time(n_proc * 0.4)
 
     ready = P.ensure_model(model_key) if model_key else P.ensure_model(scale)
 
-    ui.stats([("Hasil", f"{info['w'] * scale} × {info['h'] * scale}"),
-              ("Kelas resolusi", A.resolution_class(info["w"] * scale, info["h"] * scale)),
-              ("Frame diproses", f"{n_proc}"),
-              ("Perkiraan waktu", f"± {est}")])
+    rows = [("Hasil", f"{info['w'] * scale} × {info['h'] * scale}"),
+            ("Kelas resolusi", A.resolution_class(info["w"] * scale, info["h"] * scale)),
+            ("Frame diproses", f"{n_proc}"),
+            ("Perkiraan waktu", f"± {est}")]
+    if model_key and E.TILE_WORKERS > 1:
+        rows.append(("Proses paralel", f"{E.TILE_WORKERS} tile sekaligus"))
+    ui.stats(rows)
     st.write("")
 
     if st.button("Tingkatkan kualitas video", type="primary",

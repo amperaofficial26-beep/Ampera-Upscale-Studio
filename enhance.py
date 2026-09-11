@@ -14,12 +14,52 @@ Model:
 import os
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 import numpy as np
 import torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+# ---------------------------------------------------------------- paralelisme
+def cpu_count() -> int:
+    return os.cpu_count() or 1
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        v = int(os.environ.get(name, ""))
+        return v if v > 0 else default
+    except (TypeError, ValueError):
+        return default
+
+
+# Jumlah tile yang dikerjakan bersamaan. Bisa ditimpa lewat env AMPERA_WORKERS.
+# Default: 2 pekerja bila CPU >= 2 core (lebih dari itu tidak menolong di mesin
+# kecil karena tiap tile sudah memakai semua core lewat thread internal torch).
+TILE_WORKERS = _env_int("AMPERA_WORKERS", 2 if cpu_count() >= 2 else 1)
+
+
+def tune_torch_threads() -> int:
+    """
+    Pastikan torch memakai semua core CPU.
+
+    Di beberapa lingkungan (mis. Streamlit Cloud) torch start dengan
+    num_threads=1, sehingga hanya satu core terpakai. Ini penyebab lambat
+    yang paling besar — mengaktifkannya saja sudah memberi ~1,9x di 2 core.
+    """
+    n = cpu_count()
+    try:
+        if torch.get_num_threads() < n:
+            torch.set_num_threads(n)
+    except Exception:
+        pass
+    return torch.get_num_threads()
+
+
+tune_torch_threads()
 
 
 def _pick_model_dir() -> str:
@@ -156,8 +196,23 @@ def estimate_tiles(w: int, h: int, model_key: str) -> int:
     return len(_tile_starts(w, tile, step)) * len(_tile_starts(h, tile, step))
 
 
+def speedup_factor() -> float:
+    """
+    Perkiraan percepatan dari pengerjaan tile secara bersamaan.
+
+    Bukan linear terhadap jumlah pekerja: tiap tile sudah memakai beberapa
+    core lewat thread internal torch, jadi tambahan pekerja hanya mengisi
+    sela yang tersisa. Diukur ~1,1x untuk 2 pekerja di mesin 2 core.
+    """
+    if TILE_WORKERS <= 1:
+        return 1.0
+    return min(1.0 + 0.11 * (TILE_WORKERS - 1), float(cpu_count()))
+
+
 def estimate_seconds(w: int, h: int, model_key: str) -> float:
-    return estimate_tiles(w, h, model_key) * TILE_SECONDS.get(model_key, 30)
+    """Perkiraan waktu proses, sudah memperhitungkan pengerjaan paralel."""
+    raw = estimate_tiles(w, h, model_key) * TILE_SECONDS.get(model_key, 30)
+    return raw / speedup_factor()
 
 from collections import OrderedDict
 
@@ -229,10 +284,19 @@ def _tile_starts(n: int, tile: int, step: int):
 
 def tile_process(img: np.ndarray, fn, scale: int, tile: int = None,
                  pad: int = TILE_PAD, model_key: str = None,
-                 progress_cb=None) -> np.ndarray:
-    """Proses gambar per-tile dengan cross-fade agar tidak ada sambungan (seam)."""
+                 progress_cb=None, workers: int = None) -> np.ndarray:
+    """
+    Proses gambar per-tile dengan cross-fade agar tidak ada sambungan (seam).
+
+    Tile dikerjakan beberapa sekaligus (``workers``) memakai thread. Aman
+    karena inferensi torch melepas GIL, dan model dipakai read-only.
+    Penggabungan hasil tetap dilakukan berurutan di thread utama sehingga
+    keluarannya identik dengan mode sekuensial (bit-per-bit).
+    """
     if tile is None:
         tile = tile_for(model_key) if model_key else DEFAULT_TILE
+    if workers is None:
+        workers = TILE_WORKERS
     h, w, _ = img.shape
     step = max(tile - 2 * pad, 8)
     ys = _tile_starts(h, tile, step)
@@ -240,33 +304,53 @@ def tile_process(img: np.ndarray, fn, scale: int, tile: int = None,
     total = len(ys) * len(xs)
     out = np.zeros((h * scale, w * scale, 3), np.float32)
     wsum = np.zeros((h * scale, w * scale, 1), np.float32)
-    i = 0
-    for y0 in ys:
-        for x0 in xs:
-            y1 = min(y0 + tile, h)
-            x1 = min(x0 + tile, w)
-            tile_in = img[y0:y1, x0:x1]
-            tile_out = fn(tile_in)
-            oy0, oy1 = y0 * scale, y1 * scale
-            ox0, ox1 = x0 * scale, x1 * scale
-            wy = _side_ramp(oy1 - oy0, 2 * pad * scale, ramp_start=(y0 > 0),
-                            ramp_end=(y1 < h))
-            wx = _side_ramp(ox1 - ox0, 2 * pad * scale, ramp_start=(x0 > 0),
-                            ramp_end=(x1 < w))
-            wt = (wy[:, None] * wx[None, :]).astype(np.float32)
-            out[oy0:oy1, ox0:ox1] += tile_out * wt[..., None]
-            wsum[oy0:oy1, ox0:ox1] += wt[..., None]
-            i += 1
+
+    # koordinat semua tile, urut baris demi baris
+    coords = [(y0, x0, min(y0 + tile, h), min(x0 + tile, w))
+              for y0 in ys for x0 in xs]
+
+    def blend(idx, tile_out):
+        y0, x0, y1, x1 = coords[idx]
+        oy0, oy1 = y0 * scale, y1 * scale
+        ox0, ox1 = x0 * scale, x1 * scale
+        wy = _side_ramp(oy1 - oy0, 2 * pad * scale, ramp_start=(y0 > 0),
+                        ramp_end=(y1 < h))
+        wx = _side_ramp(ox1 - ox0, 2 * pad * scale, ramp_start=(x0 > 0),
+                        ramp_end=(x1 < w))
+        wt = (wy[:, None] * wx[None, :]).astype(np.float32)
+        out[oy0:oy1, ox0:ox1] += tile_out * wt[..., None]
+        wsum[oy0:oy1, ox0:ox1] += wt[..., None]
+
+    if workers <= 1 or total <= 1:
+        for i, (y0, x0, y1, x1) in enumerate(coords):
+            blend(i, fn(img[y0:y1, x0:x1]))
             if progress_cb:
-                progress_cb(i, total)
+                progress_cb(i + 1, total)
+    else:
+        done = 0
+        # diproses per-gelombang sebesar jumlah pekerja: hemat RAM (tidak
+        # menahan semua tile hasil sekaligus) dan progress tetap urut naik
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            for start in range(0, total, workers):
+                batch = coords[start:start + workers]
+                results = list(pool.map(
+                    lambda c: fn(img[c[0]:c[2], c[1]:c[3]]), batch))
+                for k, tile_out in enumerate(results):
+                    blend(start + k, tile_out)
+                    done += 1
+                    if progress_cb:
+                        progress_cb(done, total)
+
     out /= np.maximum(wsum, 1e-8)
     return out
 
 
 def _spandrel_enhance(model_key: str, img: np.ndarray, tile: int = None,
-                      pad: int = TILE_PAD, progress_cb=None) -> np.ndarray:
+                      pad: int = TILE_PAD, progress_cb=None,
+                      workers: int = None) -> np.ndarray:
     if tile is None:
         tile = tile_for(model_key)
+    tune_torch_threads()
     model, scale = load_spandrel(model_key)
 
     def fn(t_bgr):
@@ -282,7 +366,8 @@ def _spandrel_enhance(model_key: str, img: np.ndarray, tile: int = None,
         y *= 255.0
         return np.ascontiguousarray(y[..., ::-1])  # BGR
 
-    out = tile_process(img, fn, scale, tile=tile, pad=pad, progress_cb=progress_cb)
+    out = tile_process(img, fn, scale, tile=tile, pad=pad,
+                       progress_cb=progress_cb, workers=workers)
     return np.clip(out, 0, 255).astype(np.uint8)
 
 

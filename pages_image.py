@@ -85,9 +85,12 @@ def render():
     ready = (P.ensure_model(model_key) if model_key else
              P.ensure_model(scale) if engine == "fsrcnn" else True)
 
-    ui.stats([("Hasil", f"{w * scale} × {h * scale}"),
-              ("Kelas resolusi", A.resolution_class(w * scale, h * scale)),
-              ("Perkiraan waktu", est)])
+    rows = [("Hasil", f"{w * scale} × {h * scale}"),
+            ("Kelas resolusi", A.resolution_class(w * scale, h * scale)),
+            ("Perkiraan waktu", est)]
+    if model_key and E.TILE_WORKERS > 1:
+        rows.append(("Proses paralel", f"{E.TILE_WORKERS} tile sekaligus"))
+    ui.stats(rows)
     st.write("")
 
     if st.button("Tingkatkan kualitas gambar", type="primary",
