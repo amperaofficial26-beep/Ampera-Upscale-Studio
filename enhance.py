@@ -464,12 +464,33 @@ def video_info(path: str) -> dict:
     return info
 
 
-def decode_image(data: bytes) -> np.ndarray:
+def decode_image(data: bytes, bg: int = 255) -> np.ndarray:
+    """
+    Baca gambar jadi BGR uint8.
+
+    PNG/WebP beralpha (logo, stiker, hasil crop) TIDAK boleh dibaca dengan
+    IMREAD_COLOR: area transparan ikut jadi hitam pekat, sehingga pratinjau
+    tampak "gambarnya hilang". Karena itu alpha dibaca utuh lalu dikomposit
+    ke latar putih (bg=255) — sesuai harapan orang saat melihat logo.
+    """
     arr = np.frombuffer(data, np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    img = cv2.imdecode(arr, cv2.IMREAD_UNCHANGED)
     if img is None:
         raise ValueError("Gagal membaca gambar.")
-    return img
+
+    if img.ndim == 2:                                  # grayscale
+        return cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
+    if img.ndim == 3 and img.shape[2] == 4:            # ada kanal alpha
+        bgr = img[:, :, :3].astype(np.float32)
+        a = (img[:, :, 3:4].astype(np.float32)) / 255.0
+        out = bgr * a + float(bg) * (1.0 - a)          # komposit ke latar
+        return np.clip(out, 0, 255).astype(np.uint8)
+
+    if img.ndim == 3 and img.shape[2] == 3:
+        return img
+
+    return cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
 
 def encode_image(img: np.ndarray, fmt: str = ".png") -> bytes:

@@ -58,7 +58,11 @@ CSS = f"""
     background: radial-gradient(circle, rgba(88,96,110,.20), transparent 70%);
     animation: ampFloat 42s ease-in-out infinite reverse;
 }}
-[data-testid="stAppViewContainer"] > .main {{position: relative; z-index: 1;}}
+/* Konten HARUS berada di atas dua blob ber-blur. Tanpa aturan ini blob
+   (posisi fixed, z-index 0) menimpa gambar sehingga pratinjau tampak gelap. */
+[data-testid="stMain"],
+[data-testid="stSidebar"],
+[data-testid="stHeader"] {{position: relative; z-index: 1;}}
 
 /* hormati preferensi "kurangi animasi" */
 @media (prefers-reduced-motion: reduce) {{
@@ -227,25 +231,25 @@ html, body, [class*="css"] {{
 
 /* ============ radio pilihan model ============ */
 div[role="radiogroup"] {{gap: .45rem;}}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label {{
+[data-testid="stMain"] div[role="radiogroup"] > label {{
     border: 1px solid rgba(255,255,255,.08);
     border-radius: 11px; padding: .62rem .85rem;
     background: rgba(35,39,46,.45);
     transition: all .16s ease;
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label:hover {{
+[data-testid="stMain"] div[role="radiogroup"] > label:hover {{
     border-color: rgba(255,255,255,.2); background: rgba(45,50,58,.6);
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label > div:first-child {{
+[data-testid="stMain"] div[role="radiogroup"] > label > div:first-child {{
     display: none;
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label p {{
+[data-testid="stMain"] div[role="radiogroup"] > label p {{
     font-size: .9rem !important; color: #BFC6D0; margin: 0;
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label:has(input:checked) {{
+[data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked) {{
     border-color: rgba(255,255,255,.32); background: rgba(58,64,72,.72);
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label:has(input:checked) p {{
+[data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked) p {{
     color: #FFFFFF; font-weight: 600;
 }}
 
