@@ -1,4 +1,4 @@
-# ✨ Ampera Enhance (by Ampera Official)
+# ✦ Ampera Upscale Studio (by Ampera Official 26)
 
 Aplikasi Streamlit untuk memperbesar & meningkatkan kualitas **foto** dan **video**.
 **Semua model < 25 MB** — bisa di-commit langsung ke GitHub, user tidak perlu
@@ -16,19 +16,37 @@ mengunduh apa pun, dan ringan untuk CPU (teman baik dari Streamlit Cloud throttl
 - 📷 **Foto maksimal 20 MB**
 - 🎬 **Video maksimal 10 detik** (durasi lebih ditolak; audio asli dipertahankan otomatis)
 
+## Halaman
+
+Aplikasi berbentuk multi-halaman dengan **sidebar**:
+
+| Menu | Isi |
+|---|---|
+| **Home** | Sapaan yang berganti tiap kali dibuka, tombol ajakan mulai, footer |
+| **Image Upscale** | Unggah gambar, pratinjau kecil, identitas lengkap + penilaian kualitas, pilihan model |
+| **Video Upscale** | Unggah video, pratinjau, identitas lengkap + penilaian kualitas, pilihan model |
+| **Gabung ke Ampera** | Profil Ampera Official 26 + paket keanggotaan berbayar |
+| **Pelajari Lebih Lanjut** | Cara kerja, daftar model, batasan, tanya jawab |
+
+## Tampilan
+- Latar **gradient charcoal & abu-abu yang bergerak** (dua *blob* mengambang pelan),
+  otomatis berhenti bila perangkat menyalakan *reduce motion*
+- Sidebar kaca (*blur*) dengan menu bergaya navigasi
+- Kartu, tabel identitas, dan chip kualitas dengan garis tipis dan aksen tunggal
+
 ## Fitur
-- UI **elegan & sederhana**: alur linear *Unggah → Pilih kualitas → Proses*
-- **Preset** berbasis kebutuhan (Kualitas terbaik / Seimbang / Anime / Cepat / Tanpa AI) —
-  nama model teknis disembunyikan di keterangan
-- Opsi teknis (pembesaran, ketajaman, batas frame) ada di *Pengaturan lanjutan*
+- **Identitas berkas lengkap** — format, dimensi, megapiksel, rasio aspek, kelas
+  resolusi, kanal warna, kedalaman bit, codec, bitrate, frame rate, audio
+- **Penilaian kualitas otomatis** — ketajaman (varians Laplacian), derau,
+  pencahayaan, kontras, kepadatan data, plus skor 0–100 dan kesimpulan
 - Pratinjau sebelum/sesudah + unduh (PNG/JPG/MP4)
-- Estimasi waktu & jumlah tile ditampilkan **sebelum** proses (diukur dari CPU aktual)
+- Estimasi waktu & jumlah tile ditampilkan **sebelum** proses
 - Tiling 256px dengan cross-fade → bebas sambungan, hemat RAM
 - LRU cache model (maks 2 model) agar aman di mesin 2 GB RAM
 - Progress bar + ETA per frame untuk video
 - Video hasil di-encode **H.264 + faststart** → langsung bisa diputar di browser
-- Preset yang bobotnya belum ada ditandai *"perlu unduh model"*, dan UI otomatis
-  menampilkan tombol **Unduh model** — user tetap tidak perlu install manual
+- Model yang bobotnya belum ada ditandai *"perlu unduh model"*, dan UI otomatis
+  menampilkan tombol **Unduh model**
 
 ## Menjalankan
 
@@ -40,26 +58,30 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 streamlit run app.py   # buka http://localhost:8501
 ```
 
-> Semua bobot model sudah ikut di repo (folder `models/`, total ±26 MB) —
-> langsung jalan, tanpa download.
+> Semua bobot model sudah ikut di repo (folder `models/`) — langsung jalan.
+> Bila ada yang kurang: `python download_models.py`.
 
-## 📤 Mempublikasikan ke GitHub
+## Struktur
 
-**Semua file aman di bawah 25 MB** — upload lewat web GitHub atau `git push`, bebas:
-
-- `app.py`, `enhance.py`, `supir.py`, `download_models.py`
-- `requirements.txt`, `README.md`, `.gitignore`
-- `models/` — total ±26 MB (file terbesar 18 MB) ✅
-- `vendor/SUPIR/` (±29 MB kode, file individual kecil) — boleh ikut / boleh skip
-
-```bash
-# contoh alur push dari terminal
-git init
-git add .
-git commit -m "Ampera Enhance — AI upscaler foto & video"
-git remote add origin https://github.com/<user>/<repo>.git
-git push -u origin main
 ```
+app.py          → kerangka: tema, sidebar, router antar halaman
+ui.py           → CSS tema (gradient bergerak) + komponen tampilan + format angka
+analysis.py     → identitas & penilaian kualitas berkas (foto/video)
+presets.py      → katalog model + pemilih model + tombol unduh model
+pages_home.py   → halaman Home
+pages_image.py  → halaman Image Upscale
+pages_video.py  → halaman Video Upscale
+pages_join.py   → halaman Gabung ke Ampera (harga masih placeholder)
+pages_learn.py  → halaman Pelajari Lebih Lanjut
+enhance.py      → engine (spandrel tiling, FSRCNN, klasik, video + audio mux)
+download_models.py → unduh model yang hilang
+supir.py + vendor/SUPIR/ → integrasi SUPIR (eksperimental, GPU)
+models/         → bobot model (semua < 25 MB)
+.streamlit/config.toml → tema dasar (dark)
+```
+
+> Harga di halaman **Gabung ke Ampera** masih **placeholder** — ubah konstanta
+> `PRICE_YEAR`, `PRICE_YEAR_WAS`, `PRICE_MONTH`, `PRICE_LIFETIME` di `pages_join.py`.
 
 ## Model besar (tidak termasuk)
 SwinIR (57 MB), HAT (82 MB), Real-ESRGAN x4plus/x2plus (64 MB), dan SUPIR (±8,5 GB)
@@ -76,12 +98,3 @@ GPU NVIDIA ±11 GB VRAM + xformers + model ±8,5 GB di `models/supir/`.
 - Untuk **foto**: Real-ESRGAN 6B (kualitas) atau AnimeVideoV3 (cepat).
 - Untuk **video**: Real-ESRGAN AnimeVideoV3 (±1,5 dtk/tile) atau FSRCNN (instan).
 - Di **GPU** (torch CUDA): semua model jauh lebih cepat.
-
-## Struktur
-- `app.py` — UI Streamlit (alur & preset)
-- `ui.py` — lapisan tampilan: CSS tema, komponen `brand/label/stats/note`, format angka
-- `.streamlit/config.toml` — tema (light, aksen abu-arang)
-- `enhance.py` — engine (spandrel tiling, FSRCNN, klasik, video + audio mux, batas input)
-- `download_models.py` — unduh model yang hilang (otomatis)
-- `supir.py` + `vendor/SUPIR/` — integrasi SUPIR (eksperimental, GPU)
-- `models/` — bobot model (semua < 25 MB)
