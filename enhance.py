@@ -14,7 +14,7 @@ Model:
 import os
 import subprocess
 import time
-
+from concurrent.futures import ThreadPoolExecutor
 import cv2
 import numpy as np
 import torch
@@ -144,7 +144,20 @@ TILE_SECONDS = {
     "swinir_x4": 52, "cugan_x4": 4, "hat_x4": 24,
 }
 
+
+def cpu_count() -> int:
+    return os.cpu_count() or 1
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        v = int(os.environ.get(name, ""))
+        return v if v > 0 else default
+    except (TypeError, ValueError):
+        return default
+
 TILE_WORKERS = _env_int("AMPERA_WORKERS", 2 if cpu_count() >= 2 else 1)
+
 
 def tune_torch_threads() -> int:
     """Pastikan torch memakai semua core CPU."""
@@ -155,6 +168,8 @@ def tune_torch_threads() -> int:
     except Exception:
         pass
     return torch.get_num_threads()
+  tune_torch_threads()
+
   
 def tile_for(model_key: str) -> int:
     return TILE_OVERRIDES.get(model_key, DEFAULT_TILE)
