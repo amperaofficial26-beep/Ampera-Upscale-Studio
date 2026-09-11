@@ -418,7 +418,7 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
     cap = cv2.VideoCapture(src)
     if not cap.isOpened():
         raise RuntimeError("Gagal membuka video.")
-        fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
+    fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
     if not fps or fps != fps or fps <= 0 or fps > 240:
         fps = 30.0
     w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
