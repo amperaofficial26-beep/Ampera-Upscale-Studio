@@ -144,7 +144,18 @@ TILE_SECONDS = {
     "swinir_x4": 52, "cugan_x4": 4, "hat_x4": 24,
 }
 
+TILE_WORKERS = _env_int("AMPERA_WORKERS", 2 if cpu_count() >= 2 else 1)
 
+def tune_torch_threads() -> int:
+    """Pastikan torch memakai semua core CPU."""
+    n = cpu_count()
+    try:
+        if torch.get_num_threads() < n:
+            torch.set_num_threads(n)
+    except Exception:
+        pass
+    return torch.get_num_threads()
+  
 def tile_for(model_key: str) -> int:
     return TILE_OVERRIDES.get(model_key, DEFAULT_TILE)
 
