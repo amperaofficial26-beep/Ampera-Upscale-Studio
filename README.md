@@ -17,13 +17,18 @@ mengunduh apa pun, dan ringan untuk CPU (teman baik dari Streamlit Cloud throttl
 - 🎬 **Video maksimal 10 detik** (durasi lebih ditolak; audio asli dipertahankan otomatis)
 
 ## Fitur
+- UI **elegan & sederhana**: alur linear *Unggah → Pilih kualitas → Proses*
+- **Preset** berbasis kebutuhan (Kualitas terbaik / Seimbang / Anime / Cepat / Tanpa AI) —
+  nama model teknis disembunyikan di keterangan
+- Opsi teknis (pembesaran, ketajaman, batas frame) ada di *Pengaturan lanjutan*
 - Pratinjau sebelum/sesudah + unduh (PNG/JPG/MP4)
 - Estimasi waktu & jumlah tile ditampilkan **sebelum** proses (diukur dari CPU aktual)
 - Tiling 256px dengan cross-fade → bebas sambungan, hemat RAM
 - LRU cache model (maks 2 model) agar aman di mesin 2 GB RAM
 - Progress bar + ETA per frame untuk video
-- Kalau ada model yang belum ada di server (mis. hasil clone parsial), UI otomatis
-  menampilkan tombol **⬇️ Unduh model** — user tetap tidak perlu install manual
+- Video hasil di-encode **H.264 + faststart** → langsung bisa diputar di browser
+- Preset yang bobotnya belum ada ditandai *"perlu unduh model"*, dan UI otomatis
+  menampilkan tombol **Unduh model** — user tetap tidak perlu install manual
 
 ## Menjalankan
 
@@ -73,7 +78,9 @@ GPU NVIDIA ±11 GB VRAM + xformers + model ±8,5 GB di `models/supir/`.
 - Di **GPU** (torch CUDA): semua model jauh lebih cepat.
 
 ## Struktur
-- `app.py` — UI Streamlit
+- `app.py` — UI Streamlit (alur & preset)
+- `ui.py` — lapisan tampilan: CSS tema, komponen `brand/label/stats/note`, format angka
+- `.streamlit/config.toml` — tema (light, aksen abu-arang)
 - `enhance.py` — engine (spandrel tiling, FSRCNN, klasik, video + audio mux, batas input)
 - `download_models.py` — unduh model yang hilang (otomatis)
 - `supir.py` + `vendor/SUPIR/` — integrasi SUPIR (eksperimental, GPU)

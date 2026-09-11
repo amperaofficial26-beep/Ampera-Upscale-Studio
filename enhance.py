@@ -230,9 +230,9 @@ def _tile_starts(n: int, tile: int, step: int):
 def tile_process(img: np.ndarray, fn, scale: int, tile: int = None,
                  pad: int = TILE_PAD, model_key: str = None,
                  progress_cb=None) -> np.ndarray:
+    """Proses gambar per-tile dengan cross-fade agar tidak ada sambungan (seam)."""
     if tile is None:
         tile = tile_for(model_key) if model_key else DEFAULT_TILE
-    """Proses gambar per-tile dengan cross-fade agar tidak ada sambungan (seam)."""
     h, w, _ = img.shape
     step = max(tile - 2 * pad, 8)
     ys = _tile_starts(h, tile, step)
@@ -363,6 +363,25 @@ def mux_audio(video_noaudio: str, video_orig: str, dst: str) -> bool:
             os.remove(tmp_audio)
 
 
+def to_h264(src: str, dst: str) -> bool:
+    """
+    Re-encode ke H.264 + yuv420p + faststart.
+
+    OpenCV VideoWriter hanya bisa menulis 'mp4v' (MPEG-4 Part 2) yang TIDAK bisa
+    diputar oleh Chrome/Safari di tag <video>. Tanpa langkah ini hasil video
+    tampak "gagal" di UI walau file-nya sebenarnya valid.
+    """
+    try:
+        r = subprocess.run(
+            [_ffmpeg(), "-y", "-hide_banner", "-loglevel", "error", "-i", src,
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+             "-pix_fmt", "yuv420p", "-movflags", "+faststart", dst],
+            capture_output=True, text=True, timeout=1800)
+        return r.returncode == 0 and os.path.exists(dst) and os.path.getsize(dst) > 1000
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------- video
 def process_video(src: str, dst: str, engine: str, model_key: str = None,
                   scale: int = 2, max_frames: int = 0,
@@ -372,13 +391,16 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
     cap = cv2.VideoCapture(src)
     if not cap.isOpened():
         raise RuntimeError("Gagal membuka video.")
-    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
+    if not fps or fps != fps or fps <= 0 or fps > 240:
+        fps = 30.0
     w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
     n = total if max_frames <= 0 else min(total, max_frames)
 
-    vw = cv2.VideoWriter(dst, cv2.VideoWriter_fourcc(*"mp4v"), fps,
+    raw = dst + ".raw.mp4"     # tulisan mentah OpenCV (mp4v), lalu di-transcode
+    vw = cv2.VideoWriter(raw, cv2.VideoWriter_fourcc(*"mp4v"), fps,
                          (w * scale, h * scale))
     t0 = time.time()
     frames = 0
@@ -396,6 +418,17 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
         cap.release()
         vw.release()
 
+    if frames == 0:
+        if os.path.exists(raw):
+            os.remove(raw)
+        raise RuntimeError("Tidak ada frame yang bisa dibaca dari video ini.")
+
+    # H.264 supaya bisa diputar langsung di browser (st.video)
+    if to_h264(raw, dst):
+        os.remove(raw)
+    else:
+        os.replace(raw, dst)   # fallback: pakai mp4v, tetap bisa diunduh
+
     audio = False
     if keep_audio and frames > 0:
         audio = has_audio(src)
@@ -412,16 +445,21 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
 
 # ---------------------------------------------------------------- util
 def video_info(path: str) -> dict:
+    """Metadata video. fps selalu > 0 (fallback 30) agar UI tidak pernah bagi-nol."""
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
         return {}
+    fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
+    if not fps or fps != fps or fps <= 0 or fps > 240:   # 0, NaN, atau nilai janggal
+        fps = 30.0
+    frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
     info = {
-        "fps": cap.get(cv2.CAP_PROP_FPS) or 0,
+        "fps": fps,
         "w": int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
         "h": int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-        "frames": int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+        "frames": max(frames, 0),
     }
-    info["duration"] = info["frames"] / info["fps"] if info["fps"] else 0
+    info["duration"] = info["frames"] / fps
     cap.release()
     return info
 

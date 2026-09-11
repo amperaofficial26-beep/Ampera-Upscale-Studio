@@ -11,3 +11,5 @@ models/supir/
 # Python
 __pycache__/
 *.pyc
+.venv/
+venv/
