@@ -276,6 +276,10 @@ def _spandrel_enhance(model_key: str, img: np.ndarray, tile: int = None,
         with torch.no_grad(), torch.inference_mode():
             y = model(x).clamp(0, 1)
         y = y.squeeze(0).permute(1, 2, 0).numpy().astype(np.float32)
+        # Model mengembalikan rentang 0..1 — WAJIB dikembalikan ke skala 0..255.
+        # Tanpa ini semua nilai < 1 dan .astype(np.uint8) di bawah membulatkannya
+        # jadi 0, sehingga hasil "sesudah" tampil hitam pekat.
+        y *= 255.0
         return np.ascontiguousarray(y[..., ::-1])  # BGR
 
     out = tile_process(img, fn, scale, tile=tile, pad=pad, progress_cb=progress_cb)
