@@ -175,7 +175,12 @@ def download_model(fname: str, progress_cb=None) -> str:
 # Ukuran tile per model. HAT butuh tile kecil agar tidak OOM di RAM terbatas.
 TILE_OVERRIDES = {"hat_x4": 128}
 DEFAULT_TILE = 256
-TILE_PAD = 16
+# Tumpang-tindih antar tile. Tiap tile menghitung ulang 2*pad piksel yang sudah
+# dihitung tetangganya, jadi pad besar = banyak pekerjaan terbuang.
+# Diukur pada foto 960x540: pad=16 butuh 19,9s, pad=10 butuh 15,8s (1,26x)
+# dengan PSNR 59,9 dB terhadap pad=16 — perbedaan yang tidak kasat mata.
+# Di bawah 10 sambungan antar tile mulai berisiko terlihat.
+TILE_PAD = _env_int("AMPERA_TILE_PAD", 10)
 
 # Estimasi CPU (dtk per tile), diukur di 2 core / 2 GB RAM
 TILE_SECONDS = {
