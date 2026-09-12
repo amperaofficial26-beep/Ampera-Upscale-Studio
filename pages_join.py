@@ -17,7 +17,7 @@ PRICE_LIFETIME = 435_000    # sekali bayar
 
 
 def render():
-    ui.brand("Gabung ke Ampera", "Keanggotaan",
+    ui.brand( "Keanggotaan", "Gabung ke Ampera",
              "Satu keanggotaan, semua produk Ampera Official 26 terbuka untukmu.")
 
     # ---------------------------------------------- tentang
