@@ -17,7 +17,7 @@ Tampilan sederhana dan elegan — latar gelap tenang, tanpa animasi berlebihan.
 ## Batas input
 - 📷 **Foto maksimal 20 MB**
 - 🎬 **Video maksimal 10 detik** (durasi lebih ditolak; audio asli dipertahankan otomatis)
-- 🧠 **Anggaran memori**: hasil AI dibatasi ±64 MP (bisa diubah lewat env
+- 🧠 **Anggaran memori**: hasil AI dibatasi ±36 MP (bisa diubah lewat env
   `AMPERA_MAX_OUT_MP`). Foto yang lebih besar otomatis dikecilkan dulu —
   ini mencegah server kehabisan RAM dan mati di tengah proses
   (penyebab umum *"Error running app"* di Streamlit Cloud).
