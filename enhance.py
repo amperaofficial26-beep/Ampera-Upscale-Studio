@@ -161,12 +161,8 @@ TILE_WORKERS = _env_int("AMPERA_WORKERS", 2 if cpu_count() >= 2 else 1)
 
 
 # ---------------------------------------------------------------- anggaran memori
-# Buffer proses (akumulasi float32 + bobot + hasil uint8) memakan ±300 byte
-# per piksel output. Tanpa batas, foto 12 MP pada model 4x saja butuh >3 GB RAM
-# dan server (mis. Streamlit Cloud 2,7 GB) langsung mati -> "Error running app".
-# Karena itu output dibatasi; input yang terlalu besar dikecilkan dulu dengan
-# INTER_AREA (kualitas turun minimal, hasil akhir tetap jauh lebih besar dari
-# aslinya). Override lewat env AMPERA_MAX_OUT_MP (satuan: juta piksel output).
+# Buffer proses memakan ±300 byte per piksel output; tanpa batas, foto besar
+# membuat server kehabisan RAM dan mati (OOM). Override: env AMPERA_MAX_OUT_MP.
 BASE_MAX_OUT_MP = _env_int("AMPERA_MAX_OUT_MP", 64)
 ENGINE_BUDGET_MP = {"ai": BASE_MAX_OUT_MP, "fsrcnn": BASE_MAX_OUT_MP * 2,
                     "classic": BASE_MAX_OUT_MP * 8}
