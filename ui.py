@@ -27,6 +27,16 @@ CSS = f"""
     66%  {{transform: translate3d(-3vw,3vh,0) scale(.95);}}
     100% {{transform: translate3d(0,0,0) scale(1);}}
 }}
+@keyframes ampSweep {{
+    0%   {{transform: translateX(-120%);}}
+    100% {{transform: translateX(220%);}}
+}}
+@keyframes ampGlowPulse {{
+    0%, 100% {{box-shadow: 0 0 0 1px rgba(255,255,255,.16),
+                           0 0 10px -2px rgba(255,255,255,.16);}}
+    50%      {{box-shadow: 0 0 0 1px rgba(255,255,255,.30),
+                           0 0 20px -2px rgba(255,255,255,.34);}}
+}}
 
 /* ============ dasar ============ */
 #MainMenu, footer, header [data-testid="stStatusWidget"] {{visibility: hidden;}}
@@ -92,6 +102,7 @@ html, body, [class*="css"] {{
 [data-testid="stSidebar"] div[role="radiogroup"] {{gap: .25rem;}}
 [data-testid="stSidebar"] div[role="radiogroup"] > label {{
     position: relative;
+    overflow: hidden;
     border-radius: 9px;
     padding: .55rem .75rem .55rem .95rem;
     background: transparent;
@@ -101,19 +112,28 @@ html, body, [class*="css"] {{
 [data-testid="stSidebar"] div[role="radiogroup"] > label:hover {{background: rgba(255,255,255,.04);}}
 [data-testid="stSidebar"] div[role="radiogroup"] > label p {{
     font-size: .9rem !important; color: #B7BEC8; margin: 0;
+    position: relative; z-index: 1;
 }}
 [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) {{
     background: rgba(255,255,255,.055);
+    animation: ampGlowPulse 2.8s ease-in-out infinite;
 }}
 [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p {{
     color: #FFFFFF; font-weight: 600;
 }}
-[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked)::before {{
+[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked)::after {{
     content: "";
-    position: absolute; left: .45rem; top: 50%;
-    width: 2px; height: 1.05rem;
-    transform: translateY(-50%);
-    background: {ACCENT}; border-radius: 2px;
+    position: absolute; top: 0; bottom: 0; left: 0;
+    width: 45%;
+    background: linear-gradient(100deg,
+        transparent 0%,
+        rgba(255,255,255,.05) 35%,
+        rgba(255,255,255,.30) 50%,
+        rgba(255,255,255,.05) 65%,
+        transparent 100%);
+    filter: blur(3px);
+    pointer-events: none;
+    animation: ampSweep 3.4s ease-in-out infinite;
 }}
 .amp-side-foot {{
     margin-top: 1.4rem; padding-top: 1rem;
@@ -220,25 +240,41 @@ html, body, [class*="css"] {{
 .amp-score .txt {{font-size: .87rem; color: #AFB7C1; line-height: 1.55;}}
 
 /* ============ pilihan model (radio) ============ */
+div[role="radiogroup"] > label > div:first-child {{display: none;}}
 div[role="radiogroup"] {{gap: .45rem;}}
 [data-testid="stMain"] div[role="radiogroup"] > label {{
     position: relative;
+    overflow: hidden;
     border: 1px solid rgba(255,255,255,.07);
     border-radius: 10px; padding: .6rem .85rem;
     background: rgba(23,26,30,.72);
     transition: border-color .15s ease, background .15s ease;
 }}
 [data-testid="stMain"] div[role="radiogroup"] > label:hover {{border-color: rgba(255,255,255,.16);}}
-[data-testid="stMain"] div[role="radiogroup"] > label > div:first-child {{display: none;}}
 [data-testid="stMain"] div[role="radiogroup"] > label p {{
     font-size: .9rem !important; color: #BCC3CD; margin: 0;
+    position: relative; z-index: 1;
 }}
 [data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked) {{
-    border-color: rgba(255,255,255,.3); background: rgba(29,33,38,.85);
+    border-color: rgba(255,255,255,.32); background: rgba(29,33,38,.85);
+    animation: ampGlowPulse 2.8s ease-in-out infinite;
 }}
 [data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked) p {{color: #FFFFFF;}}
 [data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked) p strong {{color: #FFFFFF;}}
-
+[data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked)::after {{
+    content: "";
+    position: absolute; top: 0; bottom: 0; left: 0;
+    width: 40%;
+    background: linear-gradient(100deg,
+        transparent 0%,
+        rgba(255,255,255,.05) 35%,
+        rgba(255,255,255,.26) 50%,
+        rgba(255,255,255,.05) 65%,
+        transparent 100%);
+    filter: blur(3px);
+    pointer-events: none;
+    animation: ampSweep 3.4s ease-in-out infinite;
+}}
 /* ============ tombol ============ */
 .stButton > button, .stDownloadButton > button {{
     border-radius: 10px; font-weight: 560; font-size: .92rem;
