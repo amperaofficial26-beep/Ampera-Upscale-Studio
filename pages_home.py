@@ -5,10 +5,15 @@ import streamlit as st
 import ui
 
 
-def render(goto):
-    """goto(nama_halaman) dipakai tombol untuk pindah halaman."""
-    # sapaan diacak setiap kali halaman Home dibuka (bukan setiap rerun,
-    # supaya teks tidak berkedip saat tombol ditekan)
+def render(goto=None):
+    """
+    Home sengaja tanpa tombol sama sekali — murni sajian teks.
+
+    Parameter `goto` dipertahankan (opsional) agar pemanggilan dari app.py
+    tetap kompatibel, walau kini tidak dipakai.
+    """
+    # sapaan diacak sekali per sesi, bukan tiap rerun, supaya teks tidak
+    # berkedip saat halaman digambar ulang
     if "greeting" not in st.session_state:
         st.session_state.greeting = ui.random_greeting()
     hello, tagline = st.session_state.greeting
@@ -19,15 +24,11 @@ def render(goto):
             <div class="eyebrow">Ampera Upscale Studio</div>
             <h1>{hello}</h1>
             <p>{tagline}</p>
+            <div class="amp-hero-call">
+                Ayo tingkatkan kualitas kenangan indahmu
+            </div>
         </div>
         """, unsafe_allow_html=True)
-
-    st.write("")
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        if st.button("Ayo tingkatkan kualitas kenangan indahmu",
-                     type="primary", width="stretch", key="home_cta"):
-            goto("Image Upscale")
 
     st.write("")
     st.write("")
