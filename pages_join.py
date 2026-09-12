@@ -10,10 +10,10 @@ import streamlit as st
 import ui
 
 # --------------------------------------------------- harga (placeholder)
-PRICE_YEAR = 149_000        # harga promo tahunan
-PRICE_YEAR_WAS = 299_000    # harga coret
+PRICE_YEAR = 49_000        # harga promo tahunan
+PRICE_YEAR_WAS = 159_000    # harga coret
 PRICE_MONTH = 19_000        # harga bulanan
-PRICE_LIFETIME = 499_000    # sekali bayar
+PRICE_LIFETIME = 435_000    # sekali bayar
 
 
 def render():
@@ -27,13 +27,13 @@ def render():
         <div class="amp-card">
         <p style="margin:0 0 .8rem 0; color:#B4BCC7; font-size:.92rem; line-height:1.7;">
         <b style="color:#E6E9EF;">Ampera Official 26</b> adalah studio digital asal
-        Lampung yang membangun perkakas kreatif ringan — cukup dijalankan lewat
+        Palembang yang membangun perkakas kreatif ringan — cukup dijalankan lewat
         peramban, tanpa perlu komputer berspesifikasi tinggi. Kami percaya alat
         yang bagus seharusnya bisa dipakai siapa saja, termasuk dari laptop lama
         atau koneksi seadanya.
         </p>
         <p style="margin:0; color:#B4BCC7; font-size:.92rem; line-height:1.7;">
-        <i>Ampera Upscale Studio</i> adalah produk pertama kami: penajam foto dan
+        <i>Ampera Upscale Studio</i> adalah produk Kedua kami: penajam foto dan
         video berbasis AI yang berjalan sepenuhnya di server sendiri. Berkasmu
         tidak pernah dikirim ke layanan pihak ketiga.
         </p>
@@ -43,8 +43,8 @@ def render():
     st.write("")
     m1, m2, m3, m4 = st.columns(4)
     for col, (k, v) in zip((m1, m2, m3, m4), [
-            ("Berdiri", "2026"), ("Basis", "Lampung, ID"),
-            ("Produk aktif", "1"), ("Model AI", "5")]):
+            ("Berdiri", "2025"), ("Basis", "Palembang, ID"),
+            ("Produk aktif", "2"), ("Model AI", "5")]):
         with col:
             st.markdown(
                 f'<div class="amp-feat"><div class="d">{k}</div>'
