@@ -163,9 +163,9 @@ TILE_WORKERS = _env_int("AMPERA_WORKERS", 2 if cpu_count() >= 2 else 1)
 # ---------------------------------------------------------------- anggaran memori
 # Buffer proses memakan ±300 byte per piksel output; tanpa batas, foto besar
 # membuat server kehabisan RAM dan mati (OOM). Override: env AMPERA_MAX_OUT_MP.
-BASE_MAX_OUT_MP = _env_int("AMPERA_MAX_OUT_MP", 64)
+BASE_MAX_OUT_MP = _env_int("AMPERA_MAX_OUT_MP", 36)
 ENGINE_BUDGET_MP = {"ai": BASE_MAX_OUT_MP, "fsrcnn": BASE_MAX_OUT_MP * 2,
-                    "classic": BASE_MAX_OUT_MP * 8}
+                    "classic": BASE_MAX_OUT_MP * 4}
 
 
 def budget_dims(w: int, h: int, scale: int, engine: str = "ai") -> tuple:
