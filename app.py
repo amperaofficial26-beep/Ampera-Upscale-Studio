@@ -58,7 +58,7 @@ with st.sidebar:
 
     st.markdown(
         '<div class="amp-side-foot">'
-        'Ampera Official 26<br>Lampung, Indonesia<br><br>'
+        'Ampera Official 26<br>Palembang, Indonesia<br><br>'
         '© Ampera Upscale — 2026'
         '</div>', unsafe_allow_html=True)
 
