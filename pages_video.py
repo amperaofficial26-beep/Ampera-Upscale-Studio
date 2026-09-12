@@ -83,18 +83,20 @@ def render():
     # ---------------------------------------------- proses
     ui.label("4 · Proses")
     n_proc = info["frames"] if max_frames <= 0 else min(int(max_frames), info["frames"])
+    ew, eh = E.budget_dims(info["w"], info["h"], scale, engine)      
     if model_key:
-        tiles = E.estimate_tiles(info["w"], info["h"], model_key)
+        tiles = E.estimate_tiles(ew, eh, model_key)
         est = ui.human_time(n_proc * tiles * E.TILE_SECONDS[model_key])
     else:
         est = ui.human_time(n_proc * 0.4)
 
     ready = P.ensure_model(model_key) if model_key else P.ensure_model(scale)
 
-    ui.stats([("Hasil", f"{info['w'] * scale} × {info['h'] * scale}"),
-              ("Kelas resolusi", A.resolution_class(info["w"] * scale, info["h"] * scale)),
+    ui.stats([("Hasil", f"{ew * scale} × {eh * scale}"),   ← ew/eh
+              ("Kelas resolusi", A.resolution_class(ew * scale, eh * scale))
               ("Frame diproses", f"{n_proc}"),
               ("Perkiraan waktu", f"± {est}")])
+    if (ew, eh) != (info["w"], info["h"]):
     st.write("")
 
     if st.button("Tingkatkan kualitas video", type="primary",
@@ -122,11 +124,12 @@ def render():
         if res:
             st.session_state.vid_result = {
                 "path": out_path, "res": res,
+                "token": (vup.name, vup.size),
                 "name": os.path.splitext(vup.name)[0]}
 
     # ---------------------------------------------- hasil
     rs = st.session_state.get("vid_result")
-    if rs and os.path.exists(rs["path"]):
+    if rs and rs.get("token") == (vup.name, vup.size) and os.path.exists(rs["path"]):
         res = rs["res"]
         with open(rs["path"], "rb") as f:
             data = f.read()
@@ -141,7 +144,10 @@ def render():
             ("Audio", "dipertahankan" if res["audio"] else "tidak ada"),
             ("Ukuran", ui.human_size(len(data))),
         ])
+    if res.get("pre_scaled"):                      ← KODE BARU: catatan pre-scale
         st.write("")
+        ui.note("Frame video dikecilkan dulu sebelum diproses agar aman di "
+                    "memori server (lihat catatan di bagian Proses).")
         st.video(rs["path"])
         st.caption("Hasil peningkatan")
         st.download_button("Unduh video", data, f"{rs['name']}_upscaled.mp4",
