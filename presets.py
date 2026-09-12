@@ -39,6 +39,13 @@ VIDEO_PRESETS = {
 
 AUTO_DL_LIMIT = 5 * 1024 * 1024   # model ≤ 5 MB diunduh otomatis (sekali per sesi)
 
+PRESET_ICONS = {
+    "balanced": ":material/bolt:",
+    "quality": ":material/auto_awesome:",
+    "anime": ":material/brush:",
+    "fast": ":material/rocket_launch:",
+    "classic": ":material/layers:",
+}
 
 def preset_available(preset: tuple) -> bool:
     """True bila bobot model preset ini sudah ada di server."""
@@ -58,7 +65,7 @@ def preset_picker(presets: dict, key: str) -> tuple:
     def fmt(k):
         title, desc, *_ = presets[k]
         suffix = "" if avail[k] else " · perlu unduh model"
-        return f"**{title}** — {desc}{suffix}"
+        return f"{PRESET_ICONS.get(k, '')} **{title}** — {desc}{suffix}"
 
     choice = st.radio("Model", keys, index=0, format_func=fmt,
                       label_visibility="collapsed", key=key)
