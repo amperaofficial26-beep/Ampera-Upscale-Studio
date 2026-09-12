@@ -28,11 +28,11 @@ st.set_page_config(
 ui.inject_css()
 
 PAGES = {
-    "Home": pages_home,
-    "Image Upscale": pages_image,
-    "Video Upscale": pages_video,
-    "Gabung ke Ampera": pages_join,
-    "Pelajari Lebih Lanjut": pages_learn,
+    "Beranda": pages_home,                                   ┐
+    "Foto": pages_image,                                     │ KODE BARU
+    "Video": pages_video,                                    │ (nama menu baru)
+    "Keanggotaan": pages_join,                               │
+    "Panduan": pages_learn,                                  ┘
 }
 
 if "page" not in st.session_state:
@@ -42,9 +42,7 @@ if "page" not in st.session_state:
 def goto(name: str) -> None:
     """Pindah halaman dari dalam halaman (dipakai tombol ajakan di Home)."""
     st.session_state.page = name
-    st.rerun()
-
-
+   
 # ---------------------------------------------------------------- sidebar
 with st.sidebar:
     st.markdown(
