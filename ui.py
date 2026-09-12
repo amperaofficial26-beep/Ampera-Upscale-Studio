@@ -31,7 +31,19 @@ CSS = f"""
     66%  {{transform: translate3d(-3vw,3vh,0)   scale(0.95);}}
     100% {{transform: translate3d(0,0,0)        scale(1);}}
 }}
-
+/* ============ glow putih berjalan untuk pilihan aktif ============ */
+/* sapuan cahaya yang melintas dari kiri ke kanan */
+@keyframes ampSweep {{
+    0%   {{transform: translateX(-120%);}}
+    100% {{transform: translateX(220%);}}
+}}
+/* denyut halus di tepi supaya pilihan aktif tetap terasa "hidup" */
+@keyframes ampGlowPulse {{
+    0%, 100% {{box-shadow: 0 0 0 1px rgba(255,255,255,.16),
+                           0 0 10px -2px rgba(255,255,255,.16);}}
+    50%      {{box-shadow: 0 0 0 1px rgba(255,255,255,.30),
+                           0 0 20px -2px rgba(255,255,255,.34);}}
+}}
 .stApp {{
     background: linear-gradient(-45deg, #15181C, {CHARCOAL}, #2B313A, {GRAY}, #1E2228);
     background-size: 400% 400%;
