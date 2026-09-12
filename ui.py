@@ -47,6 +47,16 @@ html, body, [class*="css"] {{
     -webkit-font-smoothing: antialiased;
 }}
 .block-container {{max-width: 1000px; padding-top: 2.4rem; padding-bottom: 4rem;}}
+/* ============ radio: hilangkan bulatan bawaan ============ */
+div[role="radiogroup"] label [data-baseweb^="radio-mark"],
+div[role="radiogroup"] label input[type="radio"] {{display: none !important;}}
+div[role="radiogroup"] label [data-testid="stIconContainer"] {{
+    vertical-align: -.25em; margin-right: .3rem;
+}}
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) [data-testid="stIconContainer"],
+[data-testid="stMain"] div[role="radiogroup"] label:has(input:checked) [data-testid="stIconContainer"] {{
+    color: #FFFFFF;
+}}
 
 /* ============ latar gradient bergerak + bola cahaya ============ */
 .stApp {{
@@ -108,7 +118,6 @@ html, body, [class*="css"] {{
     background: transparent;
     transition: background .15s ease;
 }}
-[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {{display: none;}}
 [data-testid="stSidebar"] div[role="radiogroup"] > label:hover {{background: rgba(255,255,255,.04);}}
 [data-testid="stSidebar"] div[role="radiogroup"] > label p {{
     font-size: .9rem !important; color: #B7BEC8; margin: 0;
@@ -240,7 +249,6 @@ html, body, [class*="css"] {{
 .amp-score .txt {{font-size: .87rem; color: #AFB7C1; line-height: 1.55;}}
 
 /* ============ pilihan model (radio) ============ */
-div[role="radiogroup"] > label > div:first-child {{display: none;}}
 div[role="radiogroup"] {{gap: .45rem;}}
 [data-testid="stMain"] div[role="radiogroup"] > label {{
     position: relative;
