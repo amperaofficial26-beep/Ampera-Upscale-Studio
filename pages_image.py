@@ -76,6 +76,7 @@ def render():
 
     # ---------------------------------------------- proses
     ui.label("4 · Proses")
+    ew, eh = E.budget_dims(w, h, scale, engine)
     if model_key:
         est = (f"± {ui.human_time(E.estimate_seconds(w, h, model_key))} · "
                f"{E.estimate_tiles(w, h, model_key)} tile")
@@ -88,6 +89,7 @@ def render():
     ui.stats([("Hasil", f"{w * scale} × {h * scale}"),
               ("Kelas resolusi", A.resolution_class(w * scale, h * scale)),
               ("Perkiraan waktu", est)])
+    if (ew, eh) != (w, h):
     st.write("")
 
     if st.button("Tingkatkan kualitas gambar", type="primary",
@@ -106,16 +108,23 @@ def render():
         else:
             bar.empty()
 
-        if result is not None:
+        if result is not None:                                           ← KODE BARU mulai
+            # simpan sebagai bytes (PNG/JPG), bukan array — hemat RAM sesi
+            png = E.encode_image(result, ".png")
+            jpg = E.encode_image(result, ".jpg")
             st.session_state.img_result = {
-                "data": result, "elapsed": time.time() - t0,
+                "png": png, "jpg": jpg,
+                "elapsed": time.time() - t0,
                 "name": os.path.splitext(up.name)[0],
-                "src_w": w, "src_h": h,
-            }
+                "token": (up.name, up.size),          ← kunci anti-bocor
+                "out_w": result.shape[1], "out_h": result.shape[0],
+                "sharp_before": A.sharpness_score(img),
+                "sharp_after": A.sharpness_score(result),
+            } 
 
     # ---------------------------------------------- hasil
     res = st.session_state.get("img_result")
-    if res is not None and res["src_w"] == w and res["src_h"] == h:
+    if res is not None and res.get("token") == (up.name, up.size):   
         out = res["data"]
         png = E.encode_image(out, ".png")
         jpg = E.encode_image(out, ".jpg")
