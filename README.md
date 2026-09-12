@@ -1,20 +1,26 @@
 # ✨ Ampera Enhance (by Ampera Official)
 
 Aplikasi Streamlit untuk memperbesar & meningkatkan kualitas **foto** dan **video**.
-**Semua model < 25 MB** — bisa di-commit langsung ke GitHub, user tidak perlu
-mengunduh apa pun, dan ringan untuk CPU (teman baik dari Streamlit Cloud throttle).
+Tampilan sederhana dan elegan — latar gelap tenang, tanpa animasi berlebihan.
 
 | Model | Peran | Ukuran | Kecepatan CPU (per tile 256px) |
 |---|---|---|---|
 | 🥇 **Real-ESRGAN 6B** | **Mesin utama** — animasi & foto | 18 MB | ±11 dtk |
-| 🥇 **Real-ESRGAN AnimeVideoV3** | **Fidelitas tinggi — super cepat** (pilihan utama video) | 2,4 MB | ±1,5 dtk |
+| 🥇 **Real-ESRGAN AnimeVideoV3** | Fidelitas tinggi — super cepat | 2,4 MB | ±1,5 dtk |
 | 🥉 **Real-CUGAN** | Mode **Anime** | 5,4 MB | ±4 dtk |
 | ⚡ **FSRCNN** | Instan, paling ringan | 40 KB | ±0,05–0,2 dtk |
 | 🔧 **Klasik** | Fallback tanpa AI (Lanczos + unsharp) | 0 MB | instan |
 
+> **Real-ESRGAN AnimeVideoV3** (2,4 MB) tidak ikut di repo — aplikasi
+> mengunduhnya otomatis saat pertama kali dipakai (tombol *Unduh model*).
+
 ## Batas input
 - 📷 **Foto maksimal 20 MB**
 - 🎬 **Video maksimal 10 detik** (durasi lebih ditolak; audio asli dipertahankan otomatis)
+- 🧠 **Anggaran memori**: hasil AI dibatasi ±64 MP (bisa diubah lewat env
+  `AMPERA_MAX_OUT_MP`). Foto yang lebih besar otomatis dikecilkan dulu —
+  ini mencegah server kehabisan RAM dan mati di tengah proses
+  (penyebab umum *"Error running app"* di Streamlit Cloud).
 
 ## Fitur
 - Pratinjau sebelum/sesudah + unduh (PNG/JPG/MP4)
@@ -35,8 +41,9 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 streamlit run app.py   # buka http://localhost:8501
 ```
 
-> Semua bobot model sudah ikut di repo (folder `models/`, total ±26 MB) —
-> langsung jalan, tanpa download.
+> Catatan: `streamlit>=1.48` wajib — tombol-tombol memakai parameter
+> `width="stretch"` yang baru ada di versi itu. Memakai versi lebih lama
+> membuat aplikasi langsung gagal jalan (*Error running app*).
 
 ## 📤 Mempublikasikan ke GitHub
 
@@ -44,7 +51,7 @@ streamlit run app.py   # buka http://localhost:8501
 
 - `app.py`, `enhance.py`, `supir.py`, `download_models.py`
 - `requirements.txt`, `README.md`, `.gitignore`
-- `models/` — total ±26 MB (file terbesar 18 MB) ✅
+- `models/` — total ±23 MB (file terbesar 18 MB) ✅
 - `vendor/SUPIR/` (±29 MB kode, file individual kecil) — boleh ikut / boleh skip
 
 ```bash
@@ -58,23 +65,3 @@ git push -u origin main
 
 ## Model besar (tidak termasuk)
 SwinIR (57 MB), HAT (82 MB), Real-ESRGAN x4plus/x2plus (64 MB), dan SUPIR (±8,5 GB)
-tidak termasuk karena **tidak memiliki varian resmi di bawah 25 MB**.
-Kode engine-nya masih ada di `enhance.py`/`supir.py` dan bisa diaktifkan kembali
-bila suatu saat diperlukan — tinggal tambah model-nya ke `SPANDREL_MODELS`.
-
-## 💎 Mode SUPIR (eksperimental, tidak di UI)
-Kode terintegrasi di `supir.py` + `vendor/SUPIR/`, aktif hanya bila:
-GPU NVIDIA ±11 GB VRAM + xformers + model ±8,5 GB di `models/supir/`.
-
-## Catatan CPU
-- Estimasi waktu jujur selalu ditampilkan sebelum proses.
-- Untuk **foto**: Real-ESRGAN 6B (kualitas) atau AnimeVideoV3 (cepat).
-- Untuk **video**: Real-ESRGAN AnimeVideoV3 (±1,5 dtk/tile) atau FSRCNN (instan).
-- Di **GPU** (torch CUDA): semua model jauh lebih cepat.
-
-## Struktur
-- `app.py` — UI Streamlit
-- `enhance.py` — engine (spandrel tiling, FSRCNN, klasik, video + audio mux, batas input)
-- `download_models.py` — unduh model yang hilang (otomatis)
-- `supir.py` + `vendor/SUPIR/` — integrasi SUPIR (eksperimental, GPU)
-- `models/` — bobot model (semua < 25 MB)

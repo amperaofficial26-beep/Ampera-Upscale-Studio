@@ -11,6 +11,7 @@ Model:
   🔧 Klasik       — Lanczos + unsharp (tanpa AI)
 """
 
+import math
 import os
 import subprocess
 import time
@@ -157,6 +158,38 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 TILE_WORKERS = _env_int("AMPERA_WORKERS", 2 if cpu_count() >= 2 else 1)
+
+
+# ---------------------------------------------------------------- anggaran memori
+# Buffer proses (akumulasi float32 + bobot + hasil uint8) memakan ±300 byte
+# per piksel output. Tanpa batas, foto 12 MP pada model 4x saja butuh >3 GB RAM
+# dan server (mis. Streamlit Cloud 2,7 GB) langsung mati -> "Error running app".
+# Karena itu output dibatasi; input yang terlalu besar dikecilkan dulu dengan
+# INTER_AREA (kualitas turun minimal, hasil akhir tetap jauh lebih besar dari
+# aslinya). Override lewat env AMPERA_MAX_OUT_MP (satuan: juta piksel output).
+BASE_MAX_OUT_MP = _env_int("AMPERA_MAX_OUT_MP", 64)
+ENGINE_BUDGET_MP = {"ai": BASE_MAX_OUT_MP, "fsrcnn": BASE_MAX_OUT_MP * 2,
+                    "classic": BASE_MAX_OUT_MP * 8}
+
+
+def budget_dims(w: int, h: int, scale: int, engine: str = "ai") -> tuple:
+    """Dimensi input yang aman setelah anggaran memori diterapkan."""
+    if scale <= 0 or w <= 0 or h <= 0:
+        return w, h
+    limit = ENGINE_BUDGET_MP.get(engine, BASE_MAX_OUT_MP) * 1_000_000
+    if w * h * scale * scale <= limit:
+        return w, h
+    f = math.sqrt(limit / (w * h * scale * scale))
+    return (max(int(w * f) // 2 * 2, 16), max(int(h * f) // 2 * 2, 16))
+
+
+def fit_budget(img: np.ndarray, scale: int, engine: str = "ai") -> np.ndarray:
+    """Kembalikan salinan gambar yang sudah dikecilkan bila melebihi anggaran."""
+    h, w = img.shape[:2]
+    nw, nh = budget_dims(w, h, scale, engine)
+    if (nw, nh) == (w, h):
+        return img
+    return cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA)
 
 
 def tune_torch_threads() -> int:
@@ -333,7 +366,11 @@ def enhance_image(img: np.ndarray, engine: str, model_key: str = None,
                   progress_cb=None) -> np.ndarray:
     """
     engine : 'ai' (pakai model_key dari SPANDREL_MODELS), 'fsrcnn', 'classic'
+
+    Input yang melebihi anggaran memori otomatis dikecilkan dulu
+    (lihat budget_dims) supaya proses tidak membunuh server.
     """
+    img = fit_budget(img, scale, engine)
     if engine == "ai":
         if not model_key:
             raise ValueError("Engine 'ai' membutuhkan model_key.")
@@ -426,9 +463,13 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
     n = total if max_frames <= 0 else min(total, max_frames)
 
+    # anggaran memori: frame besar (mis. 4K) mungkin perlu dikecilkan dulu
+    fw, fh = budget_dims(w, h, scale, engine)
+    pre_scaled = (fw, fh) != (w, h)
+
     raw = dst + ".raw.mp4"     # tulisan mentah OpenCV (mp4v), lalu di-transcode
     vw = cv2.VideoWriter(raw, cv2.VideoWriter_fourcc(*"mp4v"), fps,
-                         (w * scale, h * scale))
+                         (fw * scale, fh * scale))
     t0 = time.time()
     frames = 0
     try:
@@ -436,6 +477,8 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
             ok, frame = cap.read()
             if not ok:
                 break
+            if pre_scaled:
+                frame = cv2.resize(frame, (fw, fh), interpolation=cv2.INTER_AREA)
             out = enhance_image(frame, engine, model_key, scale, sharpen=sharpen)
             vw.write(out)
             frames += 1
@@ -462,9 +505,10 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
 
     return {
         "fps": fps, "in_w": w, "in_h": h,
-        "out_w": w * scale, "out_h": h * scale,
+        "out_w": fw * scale, "out_h": fh * scale,
         "frames": frames, "total": total,
         "elapsed": time.time() - t0, "audio": audio,
+        "pre_scaled": pre_scaled,
     }
 
 

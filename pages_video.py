@@ -1,4 +1,4 @@
-"""Halaman 3 — Video Upscale: unggah, pratinjau, identitas + kualitas, model."""
+"""Halaman 3 — Video: unggah, pratinjau, identitas + kualitas, model, proses."""
 
 import os
 import tempfile
@@ -13,17 +13,17 @@ import ui
 
 
 def render():
-    ui.brand("Video Upscale", "Video",
-             "Unggah video pendek, periksa identitasnya, lalu pilih model.")
+    ui.brand("Video", "Peningkatan kualitas",
+             "Unggah video pendek, lihat analisisnya, lalu pilih modelnya.")
 
-    ui.label("1 · Unggah video")
+    # ---------------------------------------------- unggah
+    ui.label("Unggah video")
     vup = st.file_uploader("Video", type=["mp4", "webm", "mov", "avi", "mkv"],
                            label_visibility="collapsed", key="vid_up")
     st.caption(f"MP4, WebM, MOV, AVI atau MKV · maksimal {E.MAX_VIDEO_SECONDS} detik · "
                "audio asli dipertahankan")
 
     if not vup:
-        st.write("")
         ui.note("Belum ada video. Unggah satu berkas untuk melihat analisis lengkapnya.")
         ui.footer("© Ampera Upscale — 2026")
         return
@@ -38,8 +38,8 @@ def render():
         ui.footer("© Ampera Upscale — 2026")
         return
 
-    # ---------------------------------------------- pratinjau + identitas
-    ui.label("2 · Identitas video")
+    # ---------------------------------------------- analisis
+    ui.label("Analisis")
     prev, ident = st.columns([1, 1.25])
     with prev:
         st.video(vtmp)
@@ -49,23 +49,21 @@ def render():
         rows.insert(2, ("Ukuran berkas", ui.human_size(vup.size)))
         ui.identity_table(rows)
 
-    st.write("")
-    ui.label("Penilaian kualitas")
     q = A.video_quality(vtmp, info, vup.size)
     if q["metrics"]:
+        st.write("")
         ui.quality_chips(q["metrics"])
         st.write("")
     ui.score_box(q["score"], q["verdict"])
 
     if info["duration"] > E.MAX_VIDEO_SECONDS + 0.25:
-        st.write("")
         st.error(f"Durasi {info['duration']:.1f} detik melebihi batas "
                  f"{E.MAX_VIDEO_SECONDS} detik. Potong videonya lalu unggah ulang.")
         ui.footer("© Ampera Upscale — 2026")
         return
 
     # ---------------------------------------------- model
-    ui.label("3 · Pilihan model")
+    ui.label("Pilihan model")
     engine, model_key, scale = P.preset_picker(P.VIDEO_PRESETS, "vid_preset")
 
     frame_cap = max(int(info["fps"] * E.MAX_VIDEO_SECONDS), 1)
@@ -81,20 +79,26 @@ def render():
         sharpen = st.slider("Ketajaman tambahan", 0, 100, 0, 5, key="vid_sharp")
 
     # ---------------------------------------------- proses
-    ui.label("4 · Proses")
+    ui.label("Proses")
     n_proc = info["frames"] if max_frames <= 0 else min(int(max_frames), info["frames"])
+    ew, eh = E.budget_dims(info["w"], info["h"], scale, engine)
     if model_key:
-        tiles = E.estimate_tiles(info["w"], info["h"], model_key)
+        tiles = E.estimate_tiles(ew, eh, model_key)
         est = ui.human_time(n_proc * tiles * E.TILE_SECONDS[model_key])
     else:
         est = ui.human_time(n_proc * 0.4)
 
     ready = P.ensure_model(model_key) if model_key else P.ensure_model(scale)
 
-    ui.stats([("Hasil", f"{info['w'] * scale} × {info['h'] * scale}"),
-              ("Kelas resolusi", A.resolution_class(info["w"] * scale, info["h"] * scale)),
+    ui.stats([("Hasil", f"{ew * scale} × {eh * scale}"),
+              ("Kelas resolusi", A.resolution_class(ew * scale, eh * scale)),
               ("Frame diproses", f"{n_proc}"),
               ("Perkiraan waktu", f"± {est}")])
+    if (ew, eh) != (info["w"], info["h"]):
+        st.write("")
+        ui.note(f"Frame video {info['w']} × {info['h']} piksel terlalu besar untuk "
+                f"diproses penuh di memori server; tiap frame dikecilkan ke "
+                f"{ew} × {eh} dulu sebelum ditingkatkan.")
     st.write("")
 
     if st.button("Tingkatkan kualitas video", type="primary",
@@ -122,11 +126,12 @@ def render():
         if res:
             st.session_state.vid_result = {
                 "path": out_path, "res": res,
+                "token": (vup.name, vup.size),
                 "name": os.path.splitext(vup.name)[0]}
 
     # ---------------------------------------------- hasil
     rs = st.session_state.get("vid_result")
-    if rs and os.path.exists(rs["path"]):
+    if rs and rs.get("token") == (vup.name, vup.size) and os.path.exists(rs["path"]):
         res = rs["res"]
         with open(rs["path"], "rb") as f:
             data = f.read()
@@ -141,6 +146,10 @@ def render():
             ("Audio", "dipertahankan" if res["audio"] else "tidak ada"),
             ("Ukuran", ui.human_size(len(data))),
         ])
+        if res.get("pre_scaled"):
+            st.write("")
+            ui.note("Frame video dikecilkan dulu sebelum diproses agar aman di "
+                    "memori server (lihat catatan di bagian Proses).")
         st.write("")
         st.video(rs["path"])
         st.caption("Hasil peningkatan")
