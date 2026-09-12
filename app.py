@@ -34,6 +34,13 @@ PAGES = {
     "Keanggotaan": pages_join,
     "Panduan": pages_learn,
 }
+PAGE_ICONS = {
+    "Beranda": ":material/home:",
+    "Foto": ":material/image:",
+    "Video": ":material/movie:",
+    "Keanggotaan": ":material/workspace_premium:",
+    "Panduan": ":material/menu_book:",
+}
 
 if "page" not in st.session_state:
     st.session_state.page = "Beranda"
@@ -55,6 +62,7 @@ with st.sidebar:
         '</div>', unsafe_allow_html=True)
 
     choice = st.radio("Menu", list(PAGES), key="page",
+                      format_func=lambda p: f"{PAGE_ICONS.get(p, '')} {p}",
                       label_visibility="collapsed")
 
     st.markdown(
