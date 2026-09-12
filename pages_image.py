@@ -1,4 +1,4 @@
-"""Halaman 2 — Image Upscale: unggah, pratinjau kecil, identitas + kualitas, model."""
+"""Halaman 2 — Foto: unggah, pratinjau, identitas + kualitas, model, proses."""
 
 import os
 import time
@@ -12,16 +12,16 @@ import ui
 
 
 def render():
-    ui.brand("Image Upscale", "Foto",
-             "Unggah foto, periksa identitas dan kualitasnya, lalu pilih model.")
+    ui.brand("Foto", "Peningkatan kualitas",
+             "Unggah foto, lihat analisisnya, lalu pilih model yang paling cocok.")
 
-    ui.label("1 · Unggah gambar")
+    # ---------------------------------------------- unggah
+    ui.label("Unggah foto")
     up = st.file_uploader("Gambar", type=["png", "jpg", "jpeg", "webp", "bmp"],
                           label_visibility="collapsed", key="img_up")
     st.caption(f"JPG, PNG, WebP atau BMP · maksimal {ui.human_size(E.MAX_PHOTO_BYTES)}")
 
     if not up:
-        st.write("")
         ui.note("Belum ada gambar. Unggah satu berkas untuk melihat analisis lengkapnya.")
         ui.footer("© Ampera Upscale — 2026")
         return
@@ -41,8 +41,8 @@ def render():
 
     h, w = img.shape[:2]
 
-    # ---------------------------------------------- pratinjau kecil + identitas
-    ui.label("2 · Identitas gambar")
+    # ---------------------------------------------- analisis
+    ui.label("Analisis")
     prev, ident = st.columns([1, 1.55])
     with prev:
         st.image(img, channels="BGR", width=300)
@@ -52,16 +52,14 @@ def render():
         rows.insert(2, ("Ukuran berkas", ui.human_size(up.size)))
         ui.identity_table(rows)
 
-    # ---------------------------------------------- kualitas
     st.write("")
-    ui.label("Penilaian kualitas")
     q = A.quality_verdict(img, up.size)
     ui.quality_chips(q["metrics"])
     st.write("")
     ui.score_box(q["score"], q["verdict"])
 
     # ---------------------------------------------- model
-    ui.label("3 · Pilihan model")
+    ui.label("Pilihan model")
     engine, model_key, scale = P.preset_picker(P.PHOTO_PRESETS, "img_preset")
 
     with st.expander("Pengaturan lanjutan"):
@@ -75,21 +73,25 @@ def render():
                             help="Unsharp mask setelah pembesaran. 0 menonaktifkan.")
 
     # ---------------------------------------------- proses
-    ui.label("4 · Proses")
-    ew, eh = E.budget_dims(w, h, scale, engine)
+    ui.label("Proses")
+    ew, eh = E.budget_dims(w, h, scale, engine)   # dimensi efektif setelah anggaran
     if model_key:
-        est = (f"± {ui.human_time(E.estimate_seconds(w, h, model_key))} · "
-               f"{E.estimate_tiles(w, h, model_key)} tile")
+        est = (f"± {ui.human_time(E.estimate_seconds(ew, eh, model_key))} · "
+               f"{E.estimate_tiles(ew, eh, model_key)} tile")
     else:
         est = "beberapa detik"
 
     ready = (P.ensure_model(model_key) if model_key else
              P.ensure_model(scale) if engine == "fsrcnn" else True)
 
-    ui.stats([("Hasil", f"{w * scale} × {h * scale}"),
-              ("Kelas resolusi", A.resolution_class(w * scale, h * scale)),
+    ui.stats([("Hasil", f"{ew * scale} × {eh * scale}"),
+              ("Kelas resolusi", A.resolution_class(ew * scale, eh * scale)),
               ("Perkiraan waktu", est)])
     if (ew, eh) != (w, h):
+        st.write("")
+        ui.note(f"Foto {w} × {h} piksel terlalu besar untuk diproses penuh di "
+                f"memori server. Kami perkecil ke {ew} × {eh} dulu — hasil "
+                f"akhir tetap jauh lebih besar dan lebih tajam dari aslinya.")
     st.write("")
 
     if st.button("Tingkatkan kualitas gambar", type="primary",
@@ -108,7 +110,7 @@ def render():
         else:
             bar.empty()
 
-        if result is not None:                                           ← KODE BARU mulai
+        if result is not None:
             # simpan sebagai bytes (PNG/JPG), bukan array — hemat RAM sesi
             png = E.encode_image(result, ".png")
             jpg = E.encode_image(result, ".jpg")
@@ -116,26 +118,22 @@ def render():
                 "png": png, "jpg": jpg,
                 "elapsed": time.time() - t0,
                 "name": os.path.splitext(up.name)[0],
-                "token": (up.name, up.size),          ← kunci anti-bocor
+                "token": (up.name, up.size),
                 "out_w": result.shape[1], "out_h": result.shape[0],
                 "sharp_before": A.sharpness_score(img),
                 "sharp_after": A.sharpness_score(result),
-            } 
+            }
 
     # ---------------------------------------------- hasil
     res = st.session_state.get("img_result")
-    if res is not None and res.get("token") == (up.name, up.size):   
-        out = res["data"]
-        png = E.encode_image(out, ".png")
-        jpg = E.encode_image(out, ".jpg")
-
+    if res is not None and res.get("token") == (up.name, up.size):
         st.divider()
         ui.label("Hasil")
         ui.stats([
-            ("Resolusi", f"{w} × {h}  →  {out.shape[1]} × {out.shape[0]}"),
+            ("Resolusi", f"{w} × {h}  →  {res['out_w']} × {res['out_h']}"),
             ("Waktu", ui.human_time(res["elapsed"])),
-            ("Ketajaman", f"{A.sharpness_score(img):.0f} → {A.sharpness_score(out):.0f}"),
-            ("Ukuran PNG", ui.human_size(len(png))),
+            ("Ketajaman", f"{res['sharp_before']:.0f} → {res['sharp_after']:.0f}"),
+            ("Ukuran PNG", ui.human_size(len(res["png"]))),
         ])
         st.write("")
         c1, c2 = st.columns(2)
@@ -143,13 +141,13 @@ def render():
             st.image(img, channels="BGR", width="stretch")
             st.caption("Sebelum")
         with c2:
-            st.image(out, channels="BGR", width="stretch")
+            st.image(res["png"], width="stretch")
             st.caption("Sesudah")
 
         d1, d2 = st.columns(2)
-        d1.download_button("Unduh PNG", png, f"{res['name']}_upscaled.png",
+        d1.download_button("Unduh PNG", res["png"], f"{res['name']}_upscaled.png",
                            "image/png", width="stretch")
-        d2.download_button("Unduh JPG", jpg, f"{res['name']}_upscaled.jpg",
+        d2.download_button("Unduh JPG", res["jpg"], f"{res['name']}_upscaled.jpg",
                            "image/jpeg", width="stretch")
 
     ui.footer("© Ampera Upscale — 2026")

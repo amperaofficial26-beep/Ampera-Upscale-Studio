@@ -1,5 +1,6 @@
 # WAJIB headless untuk Streamlit Cloud / server tanpa GUI (libGL.so.1 tidak ada)
 opencv-contrib-python-headless>=4.9
+# >=1.48 wajib: tombol memakai parameter width="stretch"
 streamlit>=1.48
 numpy
 spandrel>=0.4

@@ -3,7 +3,7 @@ Ampera Upscale Studio — titik masuk aplikasi.
 
 Struktur:
     app.py          → kerangka: tema, sidebar, router antar halaman
-    ui.py           → CSS tema (latar gradient bergerak) + komponen tampilan
+    ui.py           → CSS tema (latar gelap tenang) + komponen tampilan
     analysis.py     → identitas & penilaian kualitas berkas
     presets.py      → katalog model + pemilih model
     pages_*.py      → isi tiap halaman
@@ -28,21 +28,24 @@ st.set_page_config(
 ui.inject_css()
 
 PAGES = {
-    "Beranda": pages_home,                                   ┐
-    "Foto": pages_image,                                     │ KODE BARU
-    "Video": pages_video,                                    │ (nama menu baru)
-    "Keanggotaan": pages_join,                               │
-    "Panduan": pages_learn,                                  ┘
+    "Beranda": pages_home,
+    "Foto": pages_image,
+    "Video": pages_video,
+    "Keanggotaan": pages_join,
+    "Panduan": pages_learn,
 }
 
 if "page" not in st.session_state:
-    st.session_state.page = "Home"
+    st.session_state.page = "Beranda"
 
 
 def goto(name: str) -> None:
-    """Pindah halaman dari dalam halaman (dipakai tombol ajakan di Home)."""
+    """Callback navigasi — WAJIB dipanggil lewat on_click (bukan di badan
+    script), karena state widget (key="page") hanya boleh diubah sebelum
+    widget dibuat ulang di run berikutnya."""
     st.session_state.page = name
-   
+
+
 # ---------------------------------------------------------------- sidebar
 with st.sidebar:
     st.markdown(
@@ -56,13 +59,13 @@ with st.sidebar:
 
     st.markdown(
         '<div class="amp-side-foot">'
-        'Ampera Official 26<br>Palembang, Indonesia<br><br>'
+        'Ampera Official 26 · Palembang<br>'
         '© Ampera Upscale — 2026'
         '</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- konten
 page = PAGES[choice]
-if choice == "Home":
+if choice == "Beranda":
     page.render(goto)
 else:
     page.render()

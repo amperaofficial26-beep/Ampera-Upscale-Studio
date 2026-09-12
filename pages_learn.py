@@ -7,7 +7,7 @@ import ui
 
 
 def render():
-    ui.brand("Pelajari Lebih Lanjut", "Panduan",
+    ui.brand("Panduan", "Pelajari lebih lanjut",
              "Bagaimana Ampera Upscale bekerja, dan model mana yang sebaiknya dipakai.")
 
     # ---------------------------------------------- cara kerja
@@ -80,12 +80,13 @@ def render():
     ui.stats([("Foto", ui.human_size(E.MAX_PHOTO_BYTES)),
               ("Video", f"{E.MAX_VIDEO_SECONDS} detik"),
               ("Ukuran ubin", f"{E.DEFAULT_TILE} px"),
-              ("Model tersimpan", f"maks {E.MAX_CACHE}")])
-    st.write("")
+              ("Anggaran memori", f"{E.ENGINE_BUDGET_MP['ai']} MP hasil")])
     ui.note(
         "Batas ini menjaga aplikasi tetap responsif di server bersama. Video "
         "diproses satu frame sekaligus, jadi klip 10 detik berarti ratusan kali "
-        "kerja dibanding satu foto — karena itu durasinya dibatasi."
+        "kerja dibanding satu foto — karena itu durasinya dibatasi. Foto yang "
+        "hasilnya melebihi anggaran memori otomatis dikecilkan dulu agar server "
+        "tidak mati di tengah proses."
     )
 
     # ---------------------------------------------- tanya jawab
