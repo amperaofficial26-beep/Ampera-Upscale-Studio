@@ -115,24 +115,47 @@ html, body, [class*="css"] {{
 /* menu sidebar = radio bergaya nav */
 [data-testid="stSidebar"] div[role="radiogroup"] {{gap: .3rem;}}
 [data-testid="stSidebar"] div[role="radiogroup"] > label {{
+    position: relative;
+    overflow: hidden;
     border: 1px solid transparent;
     border-radius: 10px;
     padding: .58rem .8rem;
     background: transparent;
     transition: all .16s ease;
 }}
+/* sembunyikan lingkaran radio bawaan — nav tidak perlu terlihat kaku */
+[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {{
+    display: none;
+}}
 [data-testid="stSidebar"] div[role="radiogroup"] > label:hover {{
     background: rgba(255,255,255,.05);
 }}
 [data-testid="stSidebar"] div[role="radiogroup"] > label p {{
     font-size: .9rem !important; color: #C3C9D2; margin: 0;
+    position: relative; z-index: 1;
 }}
 [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) {{
     background: rgba(255,255,255,.09);
     border-color: rgba(255,255,255,.14);
+    animation: ampGlowPulse 2.8s ease-in-out infinite;
 }}
 [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p {{
     color: #FFFFFF; font-weight: 600;
+}}
+/* cahaya putih yang berjalan melintasi menu terpilih */
+[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked)::after {{
+    content: "";
+    position: absolute; top: 0; bottom: 0; left: 0;
+    width: 45%;
+    background: linear-gradient(100deg,
+        transparent 0%,
+        rgba(255,255,255,.05) 35%,
+        rgba(255,255,255,.30) 50%,
+        rgba(255,255,255,.05) 65%,
+        transparent 100%);
+    filter: blur(3px);
+    pointer-events: none;
+    animation: ampSweep 3.4s ease-in-out infinite;
 }}
 .amp-side-foot {{
     margin-top: 1.4rem; padding-top: 1rem;
@@ -239,28 +262,46 @@ html, body, [class*="css"] {{
 
 /* ============ radio pilihan model ============ */
 div[role="radiogroup"] {{gap: .45rem;}}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label {{
+[data-testid="stMain"] div[role="radiogroup"] > label {{
+    position: relative;
+    overflow: hidden;
     border: 1px solid rgba(255,255,255,.08);
     border-radius: 11px; padding: .62rem .85rem;
     background: rgba(35,39,46,.45);
     transition: all .16s ease;
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label:hover {{
+[data-testid="stMain"] div[role="radiogroup"] > label:hover {{
     border-color: rgba(255,255,255,.2); background: rgba(45,50,58,.6);
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label > div:first-child {{
+[data-testid="stMain"] div[role="radiogroup"] > label > div:first-child {{
     display: none;
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label p {{
+[data-testid="stMain"] div[role="radiogroup"] > label p {{
     font-size: .9rem !important; color: #BFC6D0; margin: 0;
+    position: relative; z-index: 1;
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label:has(input:checked) {{
+[data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked) {{
     border-color: rgba(255,255,255,.32); background: rgba(58,64,72,.72);
+    animation: ampGlowPulse 2.8s ease-in-out infinite;
 }}
-[data-testid="stAppViewContainer"] .main div[role="radiogroup"] > label:has(input:checked) p {{
+[data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked) p {{
     color: #FFFFFF; font-weight: 600;
 }}
-
+/* cahaya putih yang berjalan melintasi model terpilih */
+[data-testid="stMain"] div[role="radiogroup"] > label:has(input:checked)::after {{
+    content: "";
+    position: absolute; top: 0; bottom: 0; left: 0;
+    width: 40%;
+    background: linear-gradient(100deg,
+        transparent 0%,
+        rgba(255,255,255,.05) 35%,
+        rgba(255,255,255,.26) 50%,
+        rgba(255,255,255,.05) 65%,
+        transparent 100%);
+    filter: blur(3px);
+    pointer-events: none;
+    animation: ampSweep 3.4s ease-in-out infinite;
+}}
 /* ============ tombol ============ */
 .stButton > button, .stDownloadButton > button {{
     border-radius: 11px; font-weight: 560; font-size: .92rem;
@@ -342,6 +383,23 @@ div[role="radiogroup"] {{gap: .45rem;}}
 .amp-hero p {{
     font-size: 1.02rem; color: #A8B0BC; max-width: 34rem;
     margin: 0 auto; line-height: 1.65;
+}}
+/* ajakan di Home — teks murni, bukan tombol (tidak bisa diklik) */
+.amp-hero-call {{
+    margin: 1.6rem auto 0 auto;
+    font-size: 1.06rem; font-weight: 600; letter-spacing: -.01em;
+    background: linear-gradient(100deg,
+        #8E97A5 0%, #8E97A5 35%,
+        #FFFFFF 50%,
+        #8E97A5 65%, #8E97A5 100%);
+    background-size: 260% 100%;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: ampTextGlow 5.5s ease-in-out infinite;
+}}
+@keyframes ampTextGlow {{
+    0%   {{background-position: 130% 0;}}
+    100% {{background-position: -30% 0;}}
 }}
 .amp-feat {{
     border: 1px solid rgba(255,255,255,.07); border-radius: 14px;
