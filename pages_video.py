@@ -81,7 +81,7 @@ def render():
     # ---------------------------------------------- proses
     ui.label("Proses")
     n_proc = info["frames"] if max_frames <= 0 else min(int(max_frames), info["frames"])
-    ew, eh = E.budget_dims(info["w"], info["h"], scale, engine)
+    ew, eh = E.video_budget_dims(info["w"], info["h"], scale, engine)
     if model_key:
         tiles = E.estimate_tiles(ew, eh, model_key)
         est = ui.human_time(n_proc * tiles * E.TILE_SECONDS[model_key])
@@ -94,11 +94,11 @@ def render():
               ("Kelas resolusi", A.resolution_class(ew * scale, eh * scale)),
               ("Frame diproses", f"{n_proc}"),
               ("Perkiraan waktu", f"± {est}")])
-    if (ew, eh) != (info["w"], info["h"]):
+        if (ew, eh) != (info["w"], info["h"]):
         st.write("")
-        ui.note(f"Frame video {info['w']} × {info['h']} piksel terlalu besar untuk "
-                f"diproses penuh di memori server; tiap frame dikecilkan ke "
-                f"{ew} × {eh} dulu sebelum ditingkatkan.")
+        ui.note(f"Agar proses video tetap ringan, tiap frame {info['w']} × {info['h']} "
+                f"diproses pada {ew} × {eh} — hasil akhirnya tetap lebih tajam "
+                f"dan jauh lebih besar dari aslinya.")
     st.write("")
 
     if st.button("Tingkatkan kualitas video", type="primary",
@@ -148,8 +148,8 @@ def render():
         ])
         if res.get("pre_scaled"):
             st.write("")
-            ui.note("Frame video dikecilkan dulu sebelum diproses agar aman di "
-                    "memori server (lihat catatan di bagian Proses).")
+            ui.note("Frame dikecilkan sedikit sebelum diproses supaya ringan dan "
+                    "aman di server (lihat catatan di bagian Proses).")
         st.write("")
         st.video(rs["path"])
         st.caption("Hasil peningkatan")
