@@ -27,7 +27,9 @@ PHOTO_PRESETS = {
 }
 
 VIDEO_PRESETS = {
-    "fast":      ("Cepat", "FSRCNN · ringan dan gesit — pilihan utama untuk video",
+    "gpu":       ("GPU Anda (browser)", "Real-CUGAN di GPU kamu · cepat · berkas tidak diunggah",
+                  "gpu", None, 4),
+    "fast":      ("Cepat", "FSRCNN · ringan dan gesit — di server",
                   "fsrcnn", None, 2),
     "balanced":  ("Seimbang", "Real-ESRGAN AnimeVideoV3 · tajam, tapi berat di CPU",
                   "ai", "realesrgan_animevid", 4),
@@ -40,12 +42,14 @@ VIDEO_PRESETS = {
 AUTO_DL_LIMIT = 5 * 1024 * 1024   # model ≤ 5 MB diunduh otomatis (sekali per sesi)
 
 PRESET_ICONS = {
+    "gpu": ":material/memory:",
     "balanced": ":material/bolt:",
     "quality": ":material/auto_awesome:",
     "anime": ":material/brush:",
     "fast": ":material/rocket_launch:",
     "classic": ":material/layers:",
 }
+
 
 def preset_available(preset: tuple) -> bool:
     """True bila bobot model preset ini sudah ada di server."""
