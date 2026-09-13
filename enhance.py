@@ -187,6 +187,26 @@ def fit_budget(img: np.ndarray, scale: int, engine: str = "ai") -> np.ndarray:
         return img
     return cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA)
 
+def _even(n) -> int:
+    """Bulatkan ke bilangan genap terdekat (wajib untuk encoder yuv420p)."""
+    n = int(n)
+    return max(n - n % 2, 2)
+
+
+# Batas khusus video: hasil per frame dijauh lebih kecil dari foto karena
+# dikalikan ratusan frame — inilah yang membuat proses video ringan.
+VIDEO_MAX_OUT_MP = _env_int("AMPERA_VIDEO_MAX_OUT_MP", 8)
+
+
+def video_budget_dims(w: int, h: int, scale: int, engine: str = "ai") -> tuple:
+    """Dimensi input efektif untuk video (anggaran foto + batas video, genap)."""
+    fw, fh = budget_dims(w, h, scale, engine)
+    limit = VIDEO_MAX_OUT_MP * 1_000_000
+    if fw * fh * scale * scale > limit:
+        f = math.sqrt(limit / (fw * fh * scale * scale))
+        fw, fh = _even(fw * f), _even(fh * f)
+    return _even(fw), _even(fh)
+  
 
 def tune_torch_threads() -> int:
     """Pastikan torch memakai semua core CPU."""
@@ -442,6 +462,37 @@ def mux_audio(video_noaudio: str, video_orig: str, dst: str) -> bool:
             os.remove(tmp_audio)
 
 
+class FFmpegVideoWriter:
+    """Tulis frame langsung menjadi H.264 lewat pipe ffmpeg.
+
+    Tidak ada file antara mp4v raksasa dan tidak ada encode ulang —
+    inilah yang membuat proses video jauh lebih ringan di CPU dan disk.
+    """
+
+    def __init__(self, path: str, w: int, h: int, fps: float):
+        cmd = [_ffmpeg(), "-y", "-hide_banner", "-loglevel", "error",
+               "-f", "rawvideo", "-pix_fmt", "bgr24",
+               "-s", f"{w}x{h}", "-r", f"{fps:.3f}", "-i", "pipe:0",
+               "-c:v", "libx264", "-preset", "veryfast", "-crf", "21",
+               "-pix_fmt", "yuv420p", "-movflags", "+faststart", path]
+        self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+
+    def write(self, frame: np.ndarray) -> None:
+        try:
+            self.proc.stdin.write(np.ascontiguousarray(frame).tobytes())
+        except (BrokenPipeError, OSError):
+            raise RuntimeError(
+                "Encoder video berhenti — kemungkinan disk atau memori server habis. "
+                "Coba durasi lebih pendek atau resolusi lebih kecil.")
+
+    def release(self) -> None:
+        try:
+            self.proc.stdin.close()
+            self.proc.wait(timeout=600)
+        except Exception:
+            self.proc.kill()
+
+
 # ---------------------------------------------------------------- video
 def process_video(src: str, dst: str, engine: str, model_key: str = None,
                   scale: int = 2, max_frames: int = 0,
@@ -459,13 +510,11 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
     n = total if max_frames <= 0 else min(total, max_frames)
 
-    # anggaran memori: frame besar (mis. 4K) mungkin perlu dikecilkan dulu
-    fw, fh = budget_dims(w, h, scale, engine)
+    # frame besar dikecilkan dulu (batas video jauh lebih ketat dari foto)
+    fw, fh = video_budget_dims(w, h, scale, engine)
     pre_scaled = (fw, fh) != (w, h)
 
-    raw = dst + ".raw.mp4"     # tulisan mentah OpenCV (mp4v), lalu di-transcode
-    vw = cv2.VideoWriter(raw, cv2.VideoWriter_fourcc(*"mp4v"), fps,
-                         (fw * scale, fh * scale))
+    vw = FFmpegVideoWriter(dst, fw * scale, fh * scale, fps)
     t0 = time.time()
     frames = 0
     try:
@@ -484,15 +533,10 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
         cap.release()
         vw.release()
     if frames == 0:
-        if os.path.exists(raw):
-            os.remove(raw)
+        if os.path.exists(dst):
+            os.remove(dst)
         raise RuntimeError("Tidak ada frame yang bisa dibaca dari video ini.")
 
-    # H.264 supaya bisa diputar langsung di browser (st.video)
-    if to_h264(raw, dst):
-        os.remove(raw)
-    else:
-        os.replace(raw, dst)   # fallback: pakai mp4v, tetap bisa diunduh
     audio = False
     if keep_audio and frames > 0:
         audio = has_audio(src)
@@ -506,7 +550,6 @@ def process_video(src: str, dst: str, engine: str, model_key: str = None,
         "elapsed": time.time() - t0, "audio": audio,
         "pre_scaled": pre_scaled,
     }
-
 
 # ---------------------------------------------------------------- util
 def video_info(path: str) -> dict:
