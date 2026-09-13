@@ -8,6 +8,7 @@ import streamlit as st
 
 import analysis as A
 import enhance as E
+import gpu_client as G
 import presets as P
 import ui
 
@@ -24,7 +25,10 @@ def render():
                "audio asli dipertahankan")
 
     if not vup:
-        ui.note("Belum ada video. Unggah satu berkas untuk melihat analisis lengkapnya.")
+        ui.note("Belum ada video. Unggah satu berkas untuk analisis di server — "
+                "atau langsung proses di GPU Anda tanpa unggah apa pun.")
+        G.ask_gpu("video", button_label="Proses di GPU saya (tanpa unggah)",
+                  button_key="vid_gpu_noup")
         ui.footer("© Ampera Upscale — 2026")
         return
 
@@ -66,6 +70,17 @@ def render():
     ui.label("Pilihan model")
     engine, model_key, scale = P.preset_picker(P.VIDEO_PRESETS, "vid_preset")
 
+    if engine == "gpu":
+        st.write("")
+        ui.note("Mode <b>GPU Anda</b>: video diproses penuh di peramban dengan "
+                "GPU komputer Anda — kecepatannya bergantung model GPU Anda, "
+                "dan berkas <b>tidak diunggah</b> ke server. Video di atas "
+                "(bila ada) hanya untuk analisis.")
+        G.ask_gpu("video", button_label="Proses video di GPU saya",
+                  button_key="vid_gpu_go")
+        ui.footer("© Ampera Upscale — 2026")
+        return
+
     frame_cap = max(int(info["fps"] * E.MAX_VIDEO_SECONDS), 1)
     with st.expander("Pengaturan lanjutan"):
         if engine == "fsrcnn":
@@ -94,11 +109,11 @@ def render():
               ("Kelas resolusi", A.resolution_class(ew * scale, eh * scale)),
               ("Frame diproses", f"{n_proc}"),
               ("Perkiraan waktu", f"± {est}")])
-        if (ew, eh) != (info["w"], info["h"]):
+    if (ew, eh) != (info["w"], info["h"]):
         st.write("")
-        ui.note(f"Agar proses video tetap ringan, tiap frame {info['w']} × {info['h']} "
-                f"diproses pada {ew} × {eh} — hasil akhirnya tetap lebih tajam "
-                f"dan jauh lebih besar dari aslinya.")
+        ui.note(f"Frame video {info['w']} × {info['h']} piksel terlalu besar untuk "
+                f"diproses penuh di memori server; tiap frame dikecilkan ke "
+                f"{ew} × {eh} dulu sebelum ditingkatkan.")
     st.write("")
 
     if st.button("Tingkatkan kualitas video", type="primary",
