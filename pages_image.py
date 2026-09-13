@@ -7,6 +7,7 @@ import streamlit as st
 
 import analysis as A
 import enhance as E
+import gpu_client as G
 import presets as P
 import ui
 
@@ -149,5 +150,15 @@ def render():
                            "image/png", width="stretch")
         d2.download_button("Unduh JPG", res["jpg"], f"{res['name']}_upscaled.jpg",
                            "image/jpeg", width="stretch")
-
+   
+    # ------------------- alternatif GPU (hanya bila proses server berat)
+    if model_key and E.estimate_seconds(ew, eh, model_key) > 180:
+        st.write("")
+        ui.label("Alternatif bila proses server terasa berat")
+        ui.note("Proses di server diperkirakan lebih dari 3 menit. Sebagai "
+                "alternatif, foto bisa diproses di GPU komputer Anda sendiri "
+                "— berkas tidak diunggah ke server.")
+        G.ask_gpu("image", button_label="Proses foto di GPU saya",
+                  button_key="img_gpu_alt")
+        
     ui.footer("© Ampera Upscale — 2026")
