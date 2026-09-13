@@ -47,9 +47,10 @@ html, body, [class*="css"] {{
     -webkit-font-smoothing: antialiased;
 }}
 .block-container {{max-width: 1000px; padding-top: 2.4rem; padding-bottom: 4rem;}}
-/* ============ radio: hilangkan bulatan bawaan ============ */
-div[role="radiogroup"] label [data-baseweb^="radio-mark"],
+/* ============ radio: hapus bulatan (radio mark) bawaan ============ */
 div[role="radiogroup"] label input[type="radio"] {{display: none !important;}}
+div[role="radiogroup"] label div:not([data-testid="stIconContainer"]):not(:has(p)):not(:has([data-testid="stIconContainer"])) {{display: none !important;}}
+div[role="radiogroup"] label > div:first-child:not(:has(p)):not(:has([data-testid="stIconContainer"])) {{display: none !important;}}
 div[role="radiogroup"] label [data-testid="stIconContainer"] {{
     vertical-align: -.25em; margin-right: .3rem;
 }}
