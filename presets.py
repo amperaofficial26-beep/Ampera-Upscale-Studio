@@ -27,14 +27,14 @@ PHOTO_PRESETS = {
 }
 
 VIDEO_PRESETS = {
-    "balanced":  ("Seimbang", "Real-ESRGAN AnimeVideoV3 · pilihan terbaik untuk video",
+    "fast":      ("Cepat", "FSRCNN · ringan dan gesit — pilihan utama untuk video",
+                  "fsrcnn", None, 2),
+    "balanced":  ("Seimbang", "Real-ESRGAN AnimeVideoV3 · tajam, tapi berat di CPU",
                   "ai", "realesrgan_animevid", 4),
-    "quality":   ("Kualitas terbaik", "Real-ESRGAN 6B · sangat lambat di CPU",
-                  "ai", "realesrgan_anime", 4),
     "anime":     ("Anime & ilustrasi", "Real-CUGAN · garis bersih untuk gambar 2D",
                   "ai", "cugan_x4", 4),
-    "fast":      ("Cepat", "FSRCNN · hasil instan, detail seadanya",
-                  "fsrcnn", None, 2),
+    "quality":   ("Kualitas terbaik", "Real-ESRGAN 6B · sangat lambat untuk video",
+                  "ai", "realesrgan_anime", 4),
 }
 
 AUTO_DL_LIMIT = 5 * 1024 * 1024   # model ≤ 5 MB diunduh otomatis (sekali per sesi)
