@@ -6,6 +6,10 @@ numpy
 spandrel>=0.4
 imageio-ffmpeg
 
+# Fallback export ONNX untuk mode GPU browser (file fp16 sudah ikut di repo)
+onnx>=1.14
+onnxconverter-common
+
 # PyTorch CPU — pakai index resmi supaya tidak menarik paket CUDA (~2,5 GB)
 # yang akan melebihi kuota disk Streamlit Cloud.
 --extra-index-url https://download.pytorch.org/whl/cpu
